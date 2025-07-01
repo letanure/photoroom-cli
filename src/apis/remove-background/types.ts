@@ -7,6 +7,7 @@ export interface RemoveBackgroundConfig {
   size: 'preview' | 'medium' | 'hd' | 'full';
   crop: boolean;
   despill: boolean;
+  dryRun?: boolean;
 }
 
 export interface PhotoRoomApiResponse {

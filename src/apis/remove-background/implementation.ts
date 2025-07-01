@@ -14,7 +14,8 @@ export async function handleRemoveBackground(options: any): Promise<void> {
     bgColor: options.bgColor,
     size: options.size,
     crop: options.crop || false,
-    despill: options.despill || false
+    despill: options.despill || false,
+    dryRun: options.dryRun || false
   };
 
   const finalConfig = await askRemoveBackgroundQuestions(config);

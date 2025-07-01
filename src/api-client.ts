@@ -19,7 +19,8 @@ export class PhotoRoomApiClient {
 
   async makeRequest<T>(
     path: string,
-    formData: FormData
+    formData: FormData,
+    dryRun = false
   ): Promise<{ data?: T; headers?: any; error?: BaseApiError | ForbiddenError }> {
     return new Promise((resolve) => {
       const options = {

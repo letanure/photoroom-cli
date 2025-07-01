@@ -39,6 +39,7 @@ program
   .option('-s, --size <size>', 'Output size (preview, medium, hd, full)', 'full')
   .option('--crop', 'Crop to cutout border')
   .option('--despill', 'Remove colored reflections from green background')
+  .option('--dry-run', 'Log the API request without executing it')
   .action(async (options) => {
     await handleRemoveBackground(options);
   });
