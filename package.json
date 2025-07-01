@@ -1,0 +1,26 @@
+{
+  "name": "photoroom-cli",
+  "version": "1.0.0",
+  "description": "",
+  "main": "dist/index.js",
+  "bin": {
+    "photoroom-cli": "./dist/index.js"
+  },
+  "scripts": {
+    "build": "tsc",
+    "dev": "tsx src/index.ts",
+    "start": "node dist/index.js",
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "type": "module",
+  "devDependencies": {
+    "@types/node": "^24.0.9",
+    "commander": "^14.0.0",
+    "enquirer": "^2.4.1",
+    "tsx": "^4.20.3",
+    "typescript": "^5.8.3"
+  }
+}
