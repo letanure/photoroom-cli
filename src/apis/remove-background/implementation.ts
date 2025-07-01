@@ -1,11 +1,25 @@
-import enquirer from 'enquirer';
+import { getApiKey } from '../../api-key-manager.js';
 import { removeBackground } from './api.js';
 import { askRemoveBackgroundQuestions } from './questions.js';
 import type { RemoveBackgroundConfig } from './types.js';
 
-const { prompt } = enquirer;
+interface RemoveBackgroundOptions {
+  input?: string;
+  output?: string;
+  format?: 'png' | 'jpg' | 'webp';
+  channels?: 'rgba' | 'alpha';
+  bgColor?: string;
+  size?: 'preview' | 'medium' | 'hd' | 'full';
+  crop?: boolean;
+  despill?: boolean;
+  dryRun?: boolean;
+  apiKey?: string;
+}
 
-export async function handleRemoveBackground(options: any): Promise<void> {
+export async function handleRemoveBackground(options: RemoveBackgroundOptions): Promise<void> {
+  // Get API key (use passed apiKey or fall back to getApiKey, skip if dry run)
+  const apiKey = options.apiKey || (options.dryRun ? 'dry-run-key' : await getApiKey(options));
+
   const config: Partial<RemoveBackgroundConfig> = {
     imageFile: options.input,
     outputPath: options.output,
@@ -34,26 +48,6 @@ export async function handleRemoveBackground(options: any): Promise<void> {
   console.log(`Crop: ${finalConfig.crop}`);
   console.log(`Despill: ${finalConfig.despill}`);
 
-  // Get API key
-  const apiKey = process.env.PHOTOROOM_API_KEY;
-  if (!apiKey) {
-    try {
-      const { key } = (await prompt({
-        type: 'password',
-        name: 'key',
-        message: 'Enter your PhotoRoom API key:',
-        validate: (value: string) => value.length > 0 || 'API key is required'
-      })) as { key: string };
-
-      // Call the API
-      await removeBackground(finalConfig, key);
-    } catch (_error) {
-      // User cancelled with Ctrl+C
-      console.log('\n👋 Goodbye!');
-      process.exit(0);
-    }
-  } else {
-    // Call the API with env key
-    await removeBackground(finalConfig, apiKey);
-  }
+  // Call the API
+  await removeBackground(finalConfig, apiKey);
 }

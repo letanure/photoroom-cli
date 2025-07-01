@@ -49,7 +49,8 @@ export async function removeBackground(
       // Handle uncertainty score
       const uncertaintyScore = response.headers?.['x-uncertainty-score'];
       if (uncertaintyScore !== undefined) {
-        const score = Number.parseFloat(uncertaintyScore);
+        const scoreValue = Array.isArray(uncertaintyScore) ? uncertaintyScore[0] : uncertaintyScore;
+        const score = Number.parseFloat(scoreValue || '0');
         const interpretation = interpretUncertaintyScore(score);
 
         console.log(`\n📊 Uncertainty Score: ${score}`);

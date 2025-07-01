@@ -1,7 +1,10 @@
 import { askImageEditingQuestions } from './questions.js';
 import type { ImageEditingConfig } from './types.js';
 
-export async function handleImageEditing(options?: { dryRun?: boolean }): Promise<void> {
+export async function handleImageEditing(options?: {
+  dryRun?: boolean;
+  apiKey?: string;
+}): Promise<void> {
   const config: ImageEditingConfig = await askImageEditingQuestions();
 
   if (options?.dryRun) {
