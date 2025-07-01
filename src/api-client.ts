@@ -21,7 +21,11 @@ export class PhotoRoomApiClient {
     path: string,
     formData: FormData,
     dryRun = false
-  ): Promise<{ data?: T; headers?: any; error?: BaseApiError | ForbiddenError }> {
+  ): Promise<{
+    data?: T;
+    headers?: Record<string, string | string[] | undefined>;
+    error?: BaseApiError | ForbiddenError;
+  }> {
     return new Promise((resolve) => {
       const options = {
         method: 'POST',
@@ -49,7 +53,7 @@ export class PhotoRoomApiClient {
         }
         console.log('\nForm Data Fields:');
         // @ts-ignore - accessing private _streams for dry run logging
-        const fields = formData._streams.filter((_item: any, index: number) => index % 2 === 1);
+        const fields = formData._streams.filter((_item: unknown, index: number) => index % 2 === 1);
         for (let i = 0; i < fields.length; i++) {
           const field = fields[i];
           if (typeof field === 'string') {
@@ -123,7 +127,10 @@ export class PhotoRoomApiClient {
   }
 }
 
-export function createFormData(imagePath: string, options: Record<string, any>): FormData {
+export function createFormData(
+  imagePath: string,
+  options: Record<string, string | boolean | undefined>
+): FormData {
   const form = new FormData();
 
   // Add image file
