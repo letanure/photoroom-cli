@@ -1,7 +1,10 @@
 import { askAccountQuestions } from './questions.js';
 import type { AccountConfig } from './types.js';
 
-export async function handleAccount(options?: { dryRun?: boolean }): Promise<void> {
+export async function handleAccount(options?: {
+  dryRun?: boolean;
+  apiKey?: string;
+}): Promise<void> {
   const config: AccountConfig = await askAccountQuestions();
 
   if (options?.dryRun) {
