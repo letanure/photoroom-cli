@@ -34,6 +34,43 @@ export class PhotoRoomApiClient {
         }
       };
 
+      if (dryRun) {
+        console.log('\n🔍 DRY RUN - API Request Details:');
+        console.log('================================');
+        console.log(`URL: https://${this.hostname}${path}`);
+        console.log(`Method: ${options.method}`);
+        console.log('\nHeaders:');
+        for (const [key, value] of Object.entries(options.headers)) {
+          if (key === 'x-api-key') {
+            console.log(`  ${key}: ${'*'.repeat(20)}...`);
+          } else {
+            console.log(`  ${key}: ${value}`);
+          }
+        }
+        console.log('\nForm Data Fields:');
+        // @ts-ignore - accessing private _streams for dry run logging
+        const fields = formData._streams.filter((_item: any, index: number) => index % 2 === 1);
+        for (let i = 0; i < fields.length; i++) {
+          const field = fields[i];
+          if (typeof field === 'string') {
+            // @ts-ignore
+            const fieldName = formData._streams[i * 2].match(/name="([^"]+)"/)?.[1];
+            console.log(`  ${fieldName}: ${field || '(empty)'}`);
+          } else if (field?.path) {
+            // @ts-ignore
+            const fieldName = formData._streams[i * 2].match(/name="([^"]+)"/)?.[1];
+            console.log(`  ${fieldName}: [File: ${field.path}]`);
+          }
+        }
+        console.log('================================\n');
+
+        resolve({
+          data: Buffer.from('DRY RUN - No actual request made') as T,
+          headers: { 'x-dry-run': 'true' }
+        });
+        return;
+      }
+
       const req = https.request(options, (res) => {
         const chunks: Buffer[] = [];
 

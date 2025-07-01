@@ -8,20 +8,28 @@ import { askForAction } from './questions.js';
 
 const program = new Command();
 
-program.name('photoroom-cli').description('CLI tool for PhotoRoom API').version('1.0.0');
+program
+  .name('photoroom-cli')
+  .description('CLI tool for PhotoRoom API')
+  .version('1.0.0')
+  .option('--dry-run', 'Log API requests without executing them');
 
-program.action(async () => {
+program.action(async (options) => {
+  if (options.dryRun) {
+    console.log('\n⚠️  DRY RUN MODE ACTIVE - No API requests will be executed\n');
+  }
+
   const action = await askForAction();
 
   switch (action) {
     case 'remove-bg':
-      await handleRemoveBackground({});
+      await handleRemoveBackground({ dryRun: options.dryRun });
       break;
     case 'account':
-      await handleAccount();
+      await handleAccount({ dryRun: options.dryRun });
       break;
     case 'image-editing':
-      await handleImageEditing();
+      await handleImageEditing({ dryRun: options.dryRun });
       break;
     default:
       console.log(`\n⚠️  ${action} is not implemented yet.`);
@@ -47,15 +55,17 @@ program
 program
   .command('account')
   .description('View account details and usage statistics')
-  .action(async () => {
-    await handleAccount();
+  .option('--dry-run', 'Log the API request without executing it')
+  .action(async (options) => {
+    await handleAccount(options);
   });
 
 program
   .command('image-editing')
   .description('Advanced image editing with AI (Plus plan)')
-  .action(async () => {
-    await handleImageEditing();
+  .option('--dry-run', 'Log the API request without executing it')
+  .action(async (options) => {
+    await handleImageEditing(options);
   });
 
 program.parse();

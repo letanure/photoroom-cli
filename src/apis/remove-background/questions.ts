@@ -93,12 +93,18 @@ export async function askRemoveBackgroundQuestions(
     initial: config.despill || false
   });
 
-  const answers = await prompt(questions);
-  const finalConfig = { ...config, ...answers } as RemoveBackgroundConfig;
+  try {
+    const answers = await prompt(questions);
+    const finalConfig = { ...config, ...answers } as RemoveBackgroundConfig;
 
-  if (finalConfig.bgColor === '') {
-    delete finalConfig.bgColor;
+    if (finalConfig.bgColor === '') {
+      delete finalConfig.bgColor;
+    }
+
+    return finalConfig;
+  } catch (_error) {
+    // User cancelled with Ctrl+C
+    console.log('\n👋 Goodbye!');
+    process.exit(0);
   }
-
-  return finalConfig;
 }

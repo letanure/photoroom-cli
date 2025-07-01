@@ -6,7 +6,9 @@ export async function removeBackground(
   config: RemoveBackgroundConfig,
   apiKey: string
 ): Promise<void> {
-  console.log('\n🔄 Processing image...');
+  if (!config.dryRun) {
+    console.log('\n🔄 Processing image...');
+  }
 
   const client = new PhotoRoomApiClient({ apiKey });
 
@@ -21,7 +23,7 @@ export async function removeBackground(
   });
 
   // Make API request
-  const response = await client.makeRequest<Buffer>('/v1/segment', formData);
+  const response = await client.makeRequest<Buffer>('/v1/segment', formData, config.dryRun);
 
   if (response.error) {
     console.error('\n❌ Error:', response.error.detail);
@@ -36,19 +38,24 @@ export async function removeBackground(
   }
 
   if (response.data) {
-    // Write the output file
-    writeFileSync(config.outputPath, response.data);
-    console.log(`\n✅ Image saved to: ${config.outputPath}`);
+    if (config.dryRun) {
+      console.log('\n✅ DRY RUN COMPLETE - No file was written');
+      console.log(`   Output would be saved to: ${config.outputPath}`);
+    } else {
+      // Write the output file
+      writeFileSync(config.outputPath, response.data);
+      console.log(`\n✅ Image saved to: ${config.outputPath}`);
 
-    // Handle uncertainty score
-    const uncertaintyScore = response.headers?.['x-uncertainty-score'];
-    if (uncertaintyScore !== undefined) {
-      const score = Number.parseFloat(uncertaintyScore);
-      const interpretation = interpretUncertaintyScore(score);
+      // Handle uncertainty score
+      const uncertaintyScore = response.headers?.['x-uncertainty-score'];
+      if (uncertaintyScore !== undefined) {
+        const score = Number.parseFloat(uncertaintyScore);
+        const interpretation = interpretUncertaintyScore(score);
 
-      console.log(`\n📊 Uncertainty Score: ${score}`);
-      console.log(`   Confidence: ${interpretation.confidence}`);
-      console.log(`   ${interpretation.description}`);
+        console.log(`\n📊 Uncertainty Score: ${score}`);
+        console.log(`   Confidence: ${interpretation.confidence}`);
+        console.log(`   ${interpretation.description}`);
+      }
     }
   }
 }
