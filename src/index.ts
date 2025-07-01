@@ -34,7 +34,7 @@ program
         { name: 'account', message: 'Account Details (todo)' },
         { name: 'image-editing', message: 'Image Editing v2 (Plus plan) (todo)' }
       ]
-    });
+    }) as { action: string };
 
     if (action === 'remove-bg') {
       await handleRemoveBackground({});
