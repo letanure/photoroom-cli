@@ -1,8 +1,12 @@
 import { askAccountQuestions } from './questions.js';
 import type { AccountConfig } from './types.js';
 
-export async function handleAccount(): Promise<void> {
+export async function handleAccount(options?: { dryRun?: boolean }): Promise<void> {
   const config: AccountConfig = await askAccountQuestions();
+
+  if (options?.dryRun) {
+    console.log('\n⚠️  DRY RUN MODE - No actual API request will be made');
+  }
 
   console.log('\n👤 Account Details:');
 

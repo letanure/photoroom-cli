@@ -19,6 +19,12 @@ export async function askAccountQuestions(): Promise<AccountConfig> {
     }
   ];
 
-  const answers = await prompt(questions);
-  return answers as AccountConfig;
+  try {
+    const answers = await prompt(questions);
+    return answers as AccountConfig;
+  } catch (_error) {
+    // User cancelled with Ctrl+C
+    console.log('\n👋 Goodbye!');
+    process.exit(0);
+  }
 }
