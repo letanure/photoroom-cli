@@ -85,54 +85,54 @@ export class ConfigManager {
     }
 
     const config = this.loadConfig();
-    
+
     // 2. If specific environment requested, return that
     if (environment && config.apiKeys?.[environment]) {
       return config.apiKeys[environment];
     }
-    
+
     // 3. Use active environment if set
     if (config.activeEnvironment && config.apiKeys?.[config.activeEnvironment]) {
       return config.apiKeys[config.activeEnvironment];
     }
-    
+
     // 4. Fallback to legacy single API key
     if (config.apiKey) {
       return config.apiKey;
     }
-    
+
     // 5. Try live first, then sandbox
     if (config.apiKeys?.live) {
       return config.apiKeys.live;
     }
-    
+
     return config.apiKeys?.sandbox;
   }
 
   async setApiKey(apiKey: string, environment: 'live' | 'sandbox' = 'live'): Promise<void> {
     const config = this.loadConfig();
-    
+
     // Initialize apiKeys object if it doesn't exist
     if (!config.apiKeys) {
       config.apiKeys = {};
     }
-    
+
     config.apiKeys[environment] = apiKey;
-    
+
     // Set as active environment if none is set
     if (!config.activeEnvironment) {
       config.activeEnvironment = environment;
     }
-    
+
     this.saveConfig(config);
   }
 
   async deleteApiKey(environment?: 'live' | 'sandbox'): Promise<void> {
     const config = this.loadConfig();
-    
+
     if (environment && config.apiKeys) {
       delete config.apiKeys[environment];
-      
+
       // If we deleted the active environment, switch to the other one or clear
       if (config.activeEnvironment === environment) {
         const otherEnv = environment === 'live' ? 'sandbox' : 'live';
@@ -148,7 +148,7 @@ export class ConfigManager {
       delete config.apiKeys;
       delete config.activeEnvironment;
     }
-    
+
     this.saveConfig(config);
   }
 
@@ -218,26 +218,26 @@ export class ConfigManager {
     if (!config.namedApiKeys) {
       config.namedApiKeys = [];
     }
-    
+
     // Remove existing key with same name if it exists
-    config.namedApiKeys = config.namedApiKeys.filter(k => k.name !== name);
-    
+    config.namedApiKeys = config.namedApiKeys.filter((k) => k.name !== name);
+
     // Add the new key
     config.namedApiKeys.push({ name, key, type });
-    
+
     this.saveConfig(config);
   }
 
   removeNamedApiKey(name: string): void {
     const config = this.loadConfig();
     if (config.namedApiKeys) {
-      config.namedApiKeys = config.namedApiKeys.filter(k => k.name !== name);
-      
+      config.namedApiKeys = config.namedApiKeys.filter((k) => k.name !== name);
+
       // If this was the active key, clear the active key
       if (config.activeApiKey === name) {
         delete config.activeApiKey;
       }
-      
+
       this.saveConfig(config);
     }
   }
@@ -250,9 +250,9 @@ export class ConfigManager {
   setActiveApiKey(name: string): void {
     const config = this.loadConfig();
     const namedKeys = config.namedApiKeys || [];
-    
+
     // Verify the key exists
-    if (namedKeys.find(k => k.name === name)) {
+    if (namedKeys.find((k) => k.name === name)) {
       config.activeApiKey = name;
       this.saveConfig(config);
     }
@@ -261,26 +261,26 @@ export class ConfigManager {
   getActiveApiKeyDetails(): NamedApiKey | undefined {
     const config = this.loadConfig();
     const namedKeys = config.namedApiKeys || [];
-    
+
     if (config.activeApiKey) {
-      return namedKeys.find(k => k.name === config.activeApiKey);
+      return namedKeys.find((k) => k.name === config.activeApiKey);
     }
-    
+
     return undefined;
   }
 
   suggestApiKeyName(type: 'live' | 'sandbox'): string {
     const namedKeys = this.getNamedApiKeys();
-    const existingNames = namedKeys.map(k => k.name.toLowerCase());
-    
+    const existingNames = namedKeys.map((k) => k.name.toLowerCase());
+
     let counter = 1;
     let suggested: string;
-    
+
     do {
       suggested = `${type}-${counter}`;
       counter++;
     } while (existingNames.includes(suggested.toLowerCase()));
-    
+
     return suggested;
   }
 
@@ -299,22 +299,22 @@ export class ConfigManager {
 
     // 3. Fallback to legacy system
     const config = this.loadConfig();
-    
+
     // Use active environment if set
     if (config.activeEnvironment && config.apiKeys?.[config.activeEnvironment]) {
       return config.apiKeys[config.activeEnvironment];
     }
-    
+
     // Fallback to legacy single API key
     if (config.apiKey) {
       return config.apiKey;
     }
-    
+
     // Try live first, then sandbox
     if (config.apiKeys?.live) {
       return config.apiKeys.live;
     }
-    
+
     return config.apiKeys?.sandbox;
   }
 }

@@ -5,13 +5,13 @@ import { getApiKey } from './api-key-manager.js';
 import { handleAccount } from './apis/account/index.js';
 import { handleImageEditing } from './apis/image-editing/index.js';
 import { handleRemoveBackground } from './apis/remove-background/index.js';
+import { handleApiKeyManagement } from './commands/api-keys.js';
 import {
   handleConfigGet,
   handleConfigPath,
   handleConfigReset,
   handleConfigSet
 } from './commands/config.js';
-import { handleApiKeyManagement } from './commands/api-keys.js';
 import { configManager } from './config.js';
 import { askForAction } from './questions.js';
 
@@ -68,7 +68,7 @@ program.action(async (options) => {
       default:
         console.log(`\n⚠️  ${action} is not implemented yet.`);
     }
-    
+
     // Exit after handling other actions (non-management actions)
     break;
   }

@@ -25,16 +25,16 @@ export async function getApiKey(options?: { apiKey?: string }): Promise<string> 
 async function handleFirstRun(): Promise<string> {
   try {
     console.log('\nWelcome to PhotoRoom CLI!');
-    console.log('\nNo API key found. Let\'s set one up using the API key management interface.\n');
-    
+    console.log("\nNo API key found. Let's set one up using the API key management interface.\n");
+
     console.log('You can choose between:');
     console.log('  • Sandbox keys (free for testing)');
     console.log('  • Live keys (for production use)');
     console.log('');
-    
+
     // Launch the API key management interface
     await handleApiKeyManagement();
-    
+
     // After management, try to get an API key again
     const configApiKey = await configManager.getApiKeyForRequest();
     if (configApiKey) {
@@ -43,7 +43,7 @@ async function handleFirstRun(): Promise<string> {
     }
     // User didn't set up a key, exit gracefully
     console.log('\nNo API key was configured. PhotoRoom CLI requires an API key to function.');
-    console.log('Run the command again when you\'re ready to set up your API key.');
+    console.log("Run the command again when you're ready to set up your API key.");
     process.exit(1);
   } catch (_error) {
     // User cancelled with Ctrl+C
