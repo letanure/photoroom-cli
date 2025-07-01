@@ -61,11 +61,6 @@ export async function askRemoveBackgroundQuestions(
 
     // Add "Select All" option first if there are images in current directory
     if (imagesInCurrentDir.length > 0) {
-      // Show table header
-      console.log('\n📁 Images found in current directory:');
-      console.log(`${'Filename'.padEnd(25)} ${'Type'.padEnd(6)} Size`);
-      console.log('─'.repeat(40));
-
       imageChoices.push({
         name: 'SELECT_ALL',
         message: `✅ Select all ${imagesInCurrentDir.length} images`
@@ -120,7 +115,7 @@ export async function askRemoveBackgroundQuestions(
       const { selectedImages } = (await prompt({
         type: 'multiselect' as const,
         name: 'selectedImages',
-        message: 'Select images to process (spacebar to select, / to search, enter to confirm):',
+        message: `Select images to process (Found ${imagesInCurrentDir.length} images - Format: Filename Type Size):`,
         choices: imageChoices,
         initial: ['SELECT_ALL'] // Pre-select "Select All" by default
       } as {
@@ -152,47 +147,44 @@ export async function askRemoveBackgroundQuestions(
   }
 
   if (!config.outputPath) {
-    if (config.imageFiles && config.imageFiles.length > 1) {
-      // For multiple images, ask for output directory
-      questions.push({
-        type: 'input',
-        name: 'outputPath',
-        message: 'Enter output directory for processed images:',
-        initial: './output',
-        validate: (value: string) => value.length > 0 || 'Output directory is required'
-      });
-    } else {
-      // For single image, ask for output file path
-      questions.push({
-        type: 'input',
-        name: 'outputPath',
-        message: 'Enter output file path:',
-        initial: './output.png',
-        validate: (value: string) => value.length > 0 || 'Output path is required'
-      });
-    }
+    // Always ask for output directory since user might process multiple images
+    questions.push({
+      type: 'input',
+      name: 'outputPath',
+      message: 'Output directory (where processed images will be saved):',
+      initial: './output',
+      validate: (value: string) => value.length > 0 || 'Output directory is required'
+    });
   }
 
   questions.push({
     type: 'select',
     name: 'format',
-    message: 'Output format:',
-    choices: ['png', 'jpg', 'webp'],
+    message: 'Output format (the format of the resulting image):',
+    choices: [
+      { name: 'png', message: 'PNG (default, best quality with transparency)' },
+      { name: 'jpg', message: 'JPG (smaller file size, no transparency)' },
+      { name: 'webp', message: 'WebP (modern format, good compression)' }
+    ],
     initial: config.format || 'png'
   });
 
   questions.push({
     type: 'select',
     name: 'channels',
-    message: 'Output channels:',
-    choices: ['rgba', 'alpha'],
+    message: 'Output channels (the channels of the resulting image):',
+    choices: [
+      { name: 'rgba', message: 'RGBA (default, full color with transparency)' },
+      { name: 'alpha', message: 'Alpha (only transparency channel, grayscale)' }
+    ],
     initial: config.channels || 'rgba'
   });
 
   questions.push({
     type: 'input',
     name: 'bgColor',
-    message: 'Background color (optional - hex or HTML color):',
+    message: 'Background color (optional - replaces transparent areas with solid color):',
+    hint: 'Can be hex code (#FF00FF) or HTML color (red, green, blue, etc.). Leave empty for transparency.',
     initial: config.bgColor || '',
     validate: (value: string) => {
       if (value === '') return true;
@@ -210,12 +202,12 @@ export async function askRemoveBackgroundQuestions(
   questions.push({
     type: 'select',
     name: 'size',
-    message: 'Output size:',
+    message: 'Output size (resizes the output to specified size, useful for mobile apps):',
     choices: [
-      { name: 'preview', message: 'Preview (0.25 MP)' },
-      { name: 'medium', message: 'Medium (1.5 MP)' },
-      { name: 'hd', message: 'HD (4 MP)' },
-      { name: 'full', message: 'Full (36 MP)' }
+      { name: 'preview', message: 'Preview (0.25 MP - smallest, fastest)' },
+      { name: 'medium', message: 'Medium (1.5 MP - balanced)' },
+      { name: 'hd', message: 'HD (4 MP - high quality)' },
+      { name: 'full', message: 'Full (36 MP - original size, can be slower)' }
     ],
     initial: config.size || 'full'
   });
@@ -223,14 +215,15 @@ export async function askRemoveBackgroundQuestions(
   questions.push({
     type: 'confirm',
     name: 'crop',
-    message: 'Crop to cutout border?',
+    message: 'Crop to cutout border? (removes transparent pixels from edges, tighter framing)',
     initial: config.crop || false
   });
 
   questions.push({
     type: 'confirm',
     name: 'despill',
-    message: 'Remove colored reflections from green background?',
+    message:
+      'Remove green screen reflections? (automatically removes green reflections on subject)',
     initial: config.despill || false
   });
 
@@ -240,6 +233,14 @@ export async function askRemoveBackgroundQuestions(
 
     if (finalConfig.bgColor === '') {
       delete finalConfig.bgColor;
+    }
+
+    // For single image, generate filename in the output directory
+    if (!finalConfig.imageFiles || finalConfig.imageFiles.length <= 1) {
+      const inputFile = finalConfig.imageFile;
+      const inputBasename = basename(inputFile, extname(inputFile));
+      const outputFilename = `${inputBasename}_processed.${finalConfig.format}`;
+      finalConfig.outputPath = join(finalConfig.outputPath, outputFilename);
     }
 
     return finalConfig;
