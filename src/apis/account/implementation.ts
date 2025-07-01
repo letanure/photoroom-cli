@@ -14,8 +14,8 @@ export async function handleAccount(options?: {
     return;
   }
 
-  const apiKey = options?.apiKey || await configManager.getApiKeyForRequest();
-  
+  const apiKey = options?.apiKey || (await configManager.getApiKeyForRequest());
+
   if (!apiKey) {
     console.log('No API key configured. Please set up an API key first.');
     return;

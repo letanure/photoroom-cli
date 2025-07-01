@@ -137,7 +137,7 @@ export class PhotoRoomApiClient {
         path: '/v1/account',
         headers: {
           'x-api-key': this.apiKey,
-          'Accept': 'application/json'
+          Accept: 'application/json'
         }
       };
 
