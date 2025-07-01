@@ -14,7 +14,7 @@ export class PhotoRoomApiClient {
 
   constructor(config: ApiClientConfig) {
     this.apiKey = config.apiKey || process.env.PHOTOROOM_API_KEY || '';
-    this.hostname = config.hostname || 'sdk.photoroom.com';
+    this.hostname = config.hostname || 'image-api.photoroom.com';
   }
 
   async makeRequest<T>(
@@ -123,6 +123,75 @@ export class PhotoRoomApiClient {
       });
 
       formData.pipe(req);
+    });
+  }
+
+  async getAccountDetails(): Promise<{
+    data?: { credits: { available: number; subscription: number } };
+    error?: BaseApiError | ForbiddenError;
+  }> {
+    return new Promise((resolve) => {
+      const options = {
+        method: 'GET',
+        hostname: this.hostname,
+        path: '/v1/account',
+        headers: {
+          'x-api-key': this.apiKey,
+          'Accept': 'application/json'
+        }
+      };
+
+      const req = https.request(options, (res) => {
+        const chunks: Buffer[] = [];
+
+        res.on('data', (chunk) => {
+          chunks.push(chunk);
+        });
+
+        res.on('end', () => {
+          const body = Buffer.concat(chunks);
+
+          if (res.statusCode === 200) {
+            try {
+              const data = JSON.parse(body.toString());
+              resolve({ data });
+            } catch {
+              resolve({
+                error: {
+                  detail: 'Invalid JSON response',
+                  status_code: 500,
+                  type: 'parse_error'
+                }
+              });
+            }
+          } else {
+            try {
+              const errorData = JSON.parse(body.toString());
+              resolve({ error: errorData });
+            } catch {
+              resolve({
+                error: {
+                  detail: 'Unknown error occurred',
+                  status_code: res.statusCode || 500,
+                  type: 'unknown_error'
+                }
+              });
+            }
+          }
+        });
+      });
+
+      req.on('error', (error) => {
+        resolve({
+          error: {
+            detail: error.message,
+            status_code: 500,
+            type: 'network_error'
+          }
+        });
+      });
+
+      req.end();
     });
   }
 }

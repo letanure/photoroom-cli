@@ -1,32 +1,39 @@
-import { askAccountQuestions } from './questions.js';
-import type { AccountConfig } from './types.js';
+import { PhotoRoomApiClient } from '../../api-client.js';
+import { configManager } from '../../config.js';
 
 export async function handleAccount(options?: {
   dryRun?: boolean;
   apiKey?: string;
 }): Promise<void> {
-  const config: AccountConfig = await askAccountQuestions();
-
   if (options?.dryRun) {
-    console.log('\n⚠️  DRY RUN MODE - No actual API request will be made');
+    console.log('\nDRY RUN MODE - No actual API request will be made');
+    console.log('\nAccount Details');
+    console.log('===============');
+    console.log('Available Credits: 100 (placeholder)');
+    console.log('Subscription Credits: 100 (placeholder)');
+    return;
   }
 
-  console.log('\n👤 Account Details:');
-
-  if (config.showDetails) {
-    console.log('📋 Account Information:');
-    console.log('  • Email: user@example.com (placeholder)');
-    console.log('  • Plan: Basic Plan');
-    console.log('  • Status: Active');
-    console.log('  • Member since: January 2024');
+  const apiKey = options?.apiKey || await configManager.getApiKeyForRequest();
+  
+  if (!apiKey) {
+    console.log('No API key configured. Please set up an API key first.');
+    return;
   }
 
-  if (config.includeUsage) {
-    console.log('\n📊 Usage Statistics:');
-    console.log('  • API calls this month: 150/1000');
-    console.log('  • Images processed: 45');
-    console.log('  • Credits remaining: 850');
+  const client = new PhotoRoomApiClient({ apiKey });
+  const response = await client.getAccountDetails();
+
+  if (response.error) {
+    console.log(`Error: ${response.error.detail}`);
+    return;
   }
 
-  console.log('\n⚠️  Account API is not implemented yet - showing placeholder data');
+  if (response.data) {
+    const { credits } = response.data;
+    console.log('\nAccount Details');
+    console.log('===============');
+    console.log(`Available Credits: ${credits.available}`);
+    console.log(`Subscription Credits: ${credits.subscription}`);
+  }
 }
