@@ -1,8 +1,12 @@
 import { askImageEditingQuestions } from './questions.js';
 import type { ImageEditingConfig } from './types.js';
 
-export async function handleImageEditing(): Promise<void> {
+export async function handleImageEditing(options?: { dryRun?: boolean }): Promise<void> {
   const config: ImageEditingConfig = await askImageEditingQuestions();
+
+  if (options?.dryRun) {
+    console.log('\n⚠️  DRY RUN MODE - No actual API request will be made');
+  }
 
   console.log('\n🎨 Image Editing v2 Configuration:');
   console.log(`Input: ${config.imageFile}`);

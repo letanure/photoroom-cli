@@ -55,6 +55,12 @@ export async function askImageEditingQuestions(): Promise<ImageEditingConfig> {
     }
   ];
 
-  const answers = await prompt(questions);
-  return answers as ImageEditingConfig;
+  try {
+    const answers = await prompt(questions);
+    return answers as ImageEditingConfig;
+  } catch (_error) {
+    // User cancelled with Ctrl+C
+    console.log('\n👋 Goodbye!');
+    process.exit(0);
+  }
 }
