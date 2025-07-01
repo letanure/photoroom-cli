@@ -11,6 +11,8 @@ import {
   handleConfigReset,
   handleConfigSet
 } from './commands/config.js';
+import { handleApiKeyManagement } from './commands/api-keys.js';
+import { configManager } from './config.js';
 import { askForAction } from './questions.js';
 
 const program = new Command();
@@ -27,23 +29,48 @@ program.action(async (options) => {
     console.log('\n⚠️  DRY RUN MODE ACTIVE - No API requests will be executed\n');
   }
 
-  // Get API key first (skip if dry run)
-  const apiKey = options.dryRun ? 'dry-run-key' : await getApiKey(options);
+  // Main loop for interactive mode
+  while (true) {
+    // Get API key first (skip if dry run)
+    const apiKey = options.dryRun ? 'dry-run-key' : await getApiKey(options);
 
-  const action = await askForAction();
+    // Show active API key if not dry run and API key is configured
+    if (!options.dryRun && apiKey !== 'dry-run-key') {
+      const activeKey = configManager.getActiveApiKeyDetails();
+      if (activeKey) {
+        const typeLabel = activeKey.type === 'live' ? 'Live' : 'Sandbox';
+        console.log(`\nUsing "${activeKey.name}" (${typeLabel})\n`);
+      } else {
+        // Fallback to legacy environment display
+        const activeEnv = configManager.getActiveEnvironment();
+        if (activeEnv) {
+          const envLabel = activeEnv === 'live' ? 'Live' : 'Sandbox';
+          console.log(`\nUsing ${envLabel} environment\n`);
+        }
+      }
+    }
 
-  switch (action) {
-    case 'remove-bg':
-      await handleRemoveBackground({ dryRun: options.dryRun, apiKey });
-      break;
-    case 'account':
-      await handleAccount({ dryRun: options.dryRun, apiKey });
-      break;
-    case 'image-editing':
-      await handleImageEditing({ dryRun: options.dryRun, apiKey });
-      break;
-    default:
-      console.log(`\n⚠️  ${action} is not implemented yet.`);
+    const action = await askForAction();
+
+    switch (action) {
+      case 'remove-bg':
+        await handleRemoveBackground({ dryRun: options.dryRun, apiKey });
+        break;
+      case 'account':
+        await handleAccount({ dryRun: options.dryRun, apiKey });
+        break;
+      case 'image-editing':
+        await handleImageEditing({ dryRun: options.dryRun, apiKey });
+        break;
+      case 'api-keys':
+        await handleApiKeyManagement();
+        continue; // Continue the loop to return to main menu
+      default:
+        console.log(`\n⚠️  ${action} is not implemented yet.`);
+    }
+    
+    // Exit after handling other actions (non-management actions)
+    break;
   }
 });
 

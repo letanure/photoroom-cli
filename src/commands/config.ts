@@ -94,7 +94,7 @@ export async function handleConfigGet(key?: string): Promise<void> {
           : key.replace('-', '') === 'defaultformat'
             ? 'defaultFormat'
             : 'defaultSize';
-      value = configManager.get(configKey as 'defaultFormat' | 'defaultSize' | 'defaultOutputPath');
+      value = configManager.get(configKey as 'defaultFormat' | 'defaultSize' | 'defaultOutputPath') as string;
       console.log(value || 'Not set');
       break;
     }

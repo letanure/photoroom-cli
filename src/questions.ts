@@ -12,14 +12,15 @@ export async function askForAction(): Promise<ActionType> {
       choices: [
         { name: 'remove-bg', message: 'Remove Background (Basic plan)' },
         { name: 'account', message: 'Account Details' },
-        { name: 'image-editing', message: 'Image Editing v2 (Plus plan)' }
+        { name: 'image-editing', message: 'Image Editing v2 (Plus plan)' },
+        { name: 'api-keys', message: 'Manage API Keys (Live/Sandbox)' }
       ]
     })) as { action: ActionType };
 
     return action;
   } catch (_error) {
     // User cancelled with Ctrl+C
-    console.log('\n👋 Goodbye!');
+    console.log('\nGoodbye!');
     process.exit(0);
   }
 }

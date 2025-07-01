@@ -1,4 +1,4 @@
-export type ActionType = 'remove-bg' | 'account' | 'image-editing';
+export type ActionType = 'remove-bg' | 'account' | 'image-editing' | 'api-keys';
 
 export interface BaseApiError {
   detail: string;

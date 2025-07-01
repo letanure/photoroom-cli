@@ -2,8 +2,21 @@ import { chmodSync, existsSync, mkdirSync, readFileSync, unlinkSync, writeFileSy
 import { homedir } from 'node:os';
 import { join } from 'node:path';
 
+export interface NamedApiKey {
+  name: string;
+  key: string;
+  type: 'live' | 'sandbox';
+}
+
 interface Config {
-  apiKey?: string;
+  apiKey?: string; // Legacy single API key (kept for backwards compatibility)
+  apiKeys?: {
+    live?: string;
+    sandbox?: string;
+  };
+  namedApiKeys?: NamedApiKey[]; // New named API keys structure
+  activeApiKey?: string; // Name of the active API key
+  activeEnvironment?: 'live' | 'sandbox'; // Legacy, keep for backwards compatibility
   defaultFormat?: 'png' | 'jpg' | 'webp';
   defaultSize?: 'preview' | 'medium' | 'hd' | 'full';
   defaultOutputPath?: string;
@@ -65,31 +78,98 @@ export class ConfigManager {
   }
 
   // API Key Management
-  async getApiKey(): Promise<string | undefined> {
+  async getApiKey(environment?: 'live' | 'sandbox'): Promise<string | undefined> {
     // 1. Check environment variable first
     if (process.env.PHOTOROOM_API_KEY) {
       return process.env.PHOTOROOM_API_KEY;
     }
 
-    // 2. Check config file
     const config = this.loadConfig();
-    return config.apiKey;
+    
+    // 2. If specific environment requested, return that
+    if (environment && config.apiKeys?.[environment]) {
+      return config.apiKeys[environment];
+    }
+    
+    // 3. Use active environment if set
+    if (config.activeEnvironment && config.apiKeys?.[config.activeEnvironment]) {
+      return config.apiKeys[config.activeEnvironment];
+    }
+    
+    // 4. Fallback to legacy single API key
+    if (config.apiKey) {
+      return config.apiKey;
+    }
+    
+    // 5. Try live first, then sandbox
+    if (config.apiKeys?.live) {
+      return config.apiKeys.live;
+    }
+    
+    return config.apiKeys?.sandbox;
   }
 
-  async setApiKey(apiKey: string): Promise<void> {
+  async setApiKey(apiKey: string, environment: 'live' | 'sandbox' = 'live'): Promise<void> {
     const config = this.loadConfig();
-    config.apiKey = apiKey;
+    
+    // Initialize apiKeys object if it doesn't exist
+    if (!config.apiKeys) {
+      config.apiKeys = {};
+    }
+    
+    config.apiKeys[environment] = apiKey;
+    
+    // Set as active environment if none is set
+    if (!config.activeEnvironment) {
+      config.activeEnvironment = environment;
+    }
+    
     this.saveConfig(config);
   }
 
-  async deleteApiKey(): Promise<void> {
+  async deleteApiKey(environment?: 'live' | 'sandbox'): Promise<void> {
     const config = this.loadConfig();
-    delete config.apiKey;
+    
+    if (environment && config.apiKeys) {
+      delete config.apiKeys[environment];
+      
+      // If we deleted the active environment, switch to the other one or clear
+      if (config.activeEnvironment === environment) {
+        const otherEnv = environment === 'live' ? 'sandbox' : 'live';
+        if (config.apiKeys[otherEnv]) {
+          config.activeEnvironment = otherEnv;
+        } else {
+          delete config.activeEnvironment;
+        }
+      }
+    } else {
+      // Delete legacy single API key
+      delete config.apiKey;
+      delete config.apiKeys;
+      delete config.activeEnvironment;
+    }
+    
     this.saveConfig(config);
+  }
+
+  getActiveEnvironment(): 'live' | 'sandbox' | undefined {
+    const config = this.loadConfig();
+    return config.activeEnvironment;
+  }
+
+  setActiveEnvironment(environment: 'live' | 'sandbox'): void {
+    const config = this.loadConfig();
+    config.activeEnvironment = environment;
+    this.saveConfig(config);
+  }
+
+  getApiKeys(): { live?: string; sandbox?: string } {
+    const config = this.loadConfig();
+    return config.apiKeys || {};
   }
 
   // General config management
-  get(key: keyof Config): string | undefined {
+  get(key: keyof Config): Config[keyof Config] {
     const config = this.loadConfig();
     return config[key];
   }
@@ -125,6 +205,117 @@ export class ConfigManager {
   // Check if this is first run (no config exists)
   isFirstRun(): boolean {
     return !existsSync(this.configFile);
+  }
+
+  // Named API Keys management
+  getNamedApiKeys(): NamedApiKey[] {
+    const config = this.loadConfig();
+    return config.namedApiKeys || [];
+  }
+
+  addNamedApiKey(name: string, key: string, type: 'live' | 'sandbox'): void {
+    const config = this.loadConfig();
+    if (!config.namedApiKeys) {
+      config.namedApiKeys = [];
+    }
+    
+    // Remove existing key with same name if it exists
+    config.namedApiKeys = config.namedApiKeys.filter(k => k.name !== name);
+    
+    // Add the new key
+    config.namedApiKeys.push({ name, key, type });
+    
+    this.saveConfig(config);
+  }
+
+  removeNamedApiKey(name: string): void {
+    const config = this.loadConfig();
+    if (config.namedApiKeys) {
+      config.namedApiKeys = config.namedApiKeys.filter(k => k.name !== name);
+      
+      // If this was the active key, clear the active key
+      if (config.activeApiKey === name) {
+        delete config.activeApiKey;
+      }
+      
+      this.saveConfig(config);
+    }
+  }
+
+  getActiveApiKeyName(): string | undefined {
+    const config = this.loadConfig();
+    return config.activeApiKey;
+  }
+
+  setActiveApiKey(name: string): void {
+    const config = this.loadConfig();
+    const namedKeys = config.namedApiKeys || [];
+    
+    // Verify the key exists
+    if (namedKeys.find(k => k.name === name)) {
+      config.activeApiKey = name;
+      this.saveConfig(config);
+    }
+  }
+
+  getActiveApiKeyDetails(): NamedApiKey | undefined {
+    const config = this.loadConfig();
+    const namedKeys = config.namedApiKeys || [];
+    
+    if (config.activeApiKey) {
+      return namedKeys.find(k => k.name === config.activeApiKey);
+    }
+    
+    return undefined;
+  }
+
+  suggestApiKeyName(type: 'live' | 'sandbox'): string {
+    const namedKeys = this.getNamedApiKeys();
+    const existingNames = namedKeys.map(k => k.name.toLowerCase());
+    
+    let counter = 1;
+    let suggested: string;
+    
+    do {
+      suggested = `${type}-${counter}`;
+      counter++;
+    } while (existingNames.includes(suggested.toLowerCase()));
+    
+    return suggested;
+  }
+
+  // Enhanced getApiKey that works with named keys
+  async getApiKeyForRequest(): Promise<string | undefined> {
+    // 1. Check environment variable first
+    if (process.env.PHOTOROOM_API_KEY) {
+      return process.env.PHOTOROOM_API_KEY;
+    }
+
+    // 2. Check active named API key
+    const activeKey = this.getActiveApiKeyDetails();
+    if (activeKey) {
+      return activeKey.key;
+    }
+
+    // 3. Fallback to legacy system
+    const config = this.loadConfig();
+    
+    // Use active environment if set
+    if (config.activeEnvironment && config.apiKeys?.[config.activeEnvironment]) {
+      return config.apiKeys[config.activeEnvironment];
+    }
+    
+    // Fallback to legacy single API key
+    if (config.apiKey) {
+      return config.apiKey;
+    }
+    
+    // Try live first, then sandbox
+    if (config.apiKeys?.live) {
+      return config.apiKeys.live;
+    }
+    
+    return config.apiKeys?.sandbox;
   }
 }
 

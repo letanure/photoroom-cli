@@ -1,7 +1,5 @@
-import enquirer from 'enquirer';
+import { handleApiKeyManagement } from './commands/api-keys.js';
 import { configManager } from './config.js';
-
-const { prompt } = enquirer;
 
 export async function getApiKey(options?: { apiKey?: string }): Promise<string> {
   // 1. Check command line flag first
@@ -14,48 +12,42 @@ export async function getApiKey(options?: { apiKey?: string }): Promise<string> 
     return process.env.PHOTOROOM_API_KEY;
   }
 
-  // 3. Check config file
-  const configApiKey = await configManager.getApiKey();
+  // 3. Check config file (both named and legacy keys)
+  const configApiKey = await configManager.getApiKeyForRequest();
   if (configApiKey) {
     return configApiKey;
   }
 
-  // 4. First run experience - prompt and save
-  return await promptAndSaveApiKey();
+  // 4. First run experience - redirect to API key management
+  return await handleFirstRun();
 }
 
-async function promptAndSaveApiKey(): Promise<string> {
+async function handleFirstRun(): Promise<string> {
   try {
-    console.log('\n🔑 Welcome to PhotoRoom CLI!');
-    console.log("No API key found. Let's set one up:\n");
-
-    const { apiKey } = (await prompt({
-      type: 'password',
-      name: 'apiKey',
-      message: 'Enter your PhotoRoom API key:',
-      validate: (value: string) => value.length > 0 || 'API key is required'
-    })) as { apiKey: string };
-
-    const { save } = (await prompt({
-      type: 'confirm',
-      name: 'save',
-      message: 'Save this key for future use?',
-      initial: true
-    })) as { save: boolean };
-
-    if (save) {
-      await configManager.setApiKey(apiKey);
-      console.log('\n✅ API key saved successfully!');
-      console.log(`📍 Config location: ${configManager.getConfigFilePath()}`);
-      console.log(
-        '💡 You can change it anytime with: photoroom-cli config set api-key <new-key>\n'
-      );
+    console.log('\nWelcome to PhotoRoom CLI!');
+    console.log('\nNo API key found. Let\'s set one up using the API key management interface.\n');
+    
+    console.log('You can choose between:');
+    console.log('  • Sandbox keys (free for testing)');
+    console.log('  • Live keys (for production use)');
+    console.log('');
+    
+    // Launch the API key management interface
+    await handleApiKeyManagement();
+    
+    // After management, try to get an API key again
+    const configApiKey = await configManager.getApiKeyForRequest();
+    if (configApiKey) {
+      console.log('\nAPI key setup complete! You can now use PhotoRoom CLI.\n');
+      return configApiKey;
     }
-
-    return apiKey;
+    // User didn't set up a key, exit gracefully
+    console.log('\nNo API key was configured. PhotoRoom CLI requires an API key to function.');
+    console.log('Run the command again when you\'re ready to set up your API key.');
+    process.exit(1);
   } catch (_error) {
     // User cancelled with Ctrl+C
-    console.log('\n👋 Goodbye!');
+    console.log('\nGoodbye!');
     process.exit(0);
   }
 }

@@ -1,10 +1,18 @@
 {
   "name": "photoroom-cli",
   "version": "1.0.0",
-  "description": "",
+  "description": "CLI tool for PhotoRoom API - remove backgrounds, manage images with AI",
   "main": "dist/index.js",
   "bin": {
     "photoroom-cli": "./dist/index.js"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/letanure/photoroom-cli.git"
+  },
+  "homepage": "https://github.com/letanure/photoroom-cli#readme",
+  "bugs": {
+    "url": "https://github.com/letanure/photoroom-cli/issues"
   },
   "scripts": {
     "build": "tsc",
@@ -16,20 +24,36 @@
     "format": "biome format --write ./src",
     "check": "biome check ./src && tsc --noEmit",
     "check:fix": "biome check --write ./src",
-    "typecheck": "tsc --noEmit"
+    "typecheck": "tsc --noEmit",
+    "release": "npm run check && npm run build && standard-version",
+    "release:minor": "npm run check && npm run build && standard-version --release-as minor",
+    "release:major": "npm run check && npm run build && standard-version --release-as major",
+    "release:patch": "npm run check && npm run build && standard-version --release-as patch",
+    "release:dry-run": "standard-version --dry-run"
   },
-  "keywords": [],
-  "author": "",
-  "license": "ISC",
+  "keywords": [
+    "photoroom",
+    "cli",
+    "api",
+    "background-removal",
+    "image-processing",
+    "ai",
+    "automation"
+  ],
+  "author": "letanure",
+  "license": "MIT",
   "type": "module",
   "devDependencies": {
     "@biomejs/biome": "^2.0.6",
     "@commitlint/cli": "^19.8.1",
     "@commitlint/config-conventional": "^19.8.1",
+    "@octokit/rest": "^22.0.0",
     "@types/node": "^24.0.9",
     "commander": "^14.0.0",
+    "conventional-changelog-cli": "^5.0.0",
     "enquirer": "^2.4.1",
     "husky": "^9.1.7",
+    "standard-version": "^9.5.0",
     "tsx": "^4.20.3",
     "typescript": "^5.8.3"
   },

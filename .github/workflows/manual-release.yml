@@ -1,0 +1,97 @@
+name: Manual Release
+
+on:
+  workflow_dispatch:
+    inputs:
+      release_type:
+        description: 'Release type'
+        required: true
+        default: 'patch'
+        type: choice
+        options:
+        - patch
+        - minor
+        - major
+      dry_run:
+        description: 'Dry run (just show what would be released)'
+        required: false
+        default: false
+        type: boolean
+
+permissions:
+  contents: write
+  pull-requests: write
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Run linting and type checking
+        run: npm run check
+
+      - name: Build
+        run: npm run build
+
+      - name: Configure Git
+        if: ${{ !inputs.dry_run }}
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+
+      - name: Dry Run Release
+        if: ${{ inputs.dry_run }}
+        run: npm run release:dry-run
+
+      - name: Create Release
+        if: ${{ !inputs.dry_run }}
+        run: npm run release:${{ inputs.release_type }}
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Push changes
+        if: ${{ !inputs.dry_run }}
+        run: |
+          git push --follow-tags origin main
+
+      - name: Extract release info
+        if: ${{ !inputs.dry_run }}
+        id: release_info
+        run: |
+          VERSION=$(node -p "require('./package.json').version")
+          echo "version=$VERSION" >> $GITHUB_OUTPUT
+          echo "tag=v$VERSION" >> $GITHUB_OUTPUT
+          
+          # Extract release notes from CHANGELOG.md for this version
+          sed -n "/^## \[${VERSION}\]/,/^## \[/p" CHANGELOG.md | head -n -1 > release_notes.md
+          
+          # If no specific notes found, use a default message
+          if [ ! -s release_notes.md ]; then
+            echo "## Changes" > release_notes.md
+            echo "See [CHANGELOG.md](./CHANGELOG.md) for detailed changes." >> release_notes.md
+          fi
+
+      - name: Create GitHub Release
+        if: ${{ !inputs.dry_run }}
+        run: |
+          gh release create ${{ steps.release_info.outputs.tag }} \
+            --title "Release ${{ steps.release_info.outputs.tag }}" \
+            --notes-file release_notes.md \
+            --latest
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
