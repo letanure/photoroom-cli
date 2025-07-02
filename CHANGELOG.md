@@ -2,6 +2,18 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+## [1.2.0](https://github.com/letanure/photoroom-cli/compare/v1.1.0...v1.2.0) (2025-07-01)
+
+
+### Features
+
+* add account details retrieval ([323702c](https://github.com/letanure/photoroom-cli/commit/323702c62b0401cfee4f63795c03f3145f67fa24))
+
+
+### Bug Fixes
+
+* lint ([911e06d](https://github.com/letanure/photoroom-cli/commit/911e06d625a6494e0df365c834d625ab908cec03))
+
 ## 1.1.0 (2025-07-01)
 
 
