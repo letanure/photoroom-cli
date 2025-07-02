@@ -45,6 +45,14 @@ export async function processImages<T>(
         console.log(`   Type: ${result.type}`);
       }
       console.log(`   Error: ${result.error}`);
+
+      // Check for 403 Forbidden errors
+      if ('statusCode' in result && result.statusCode === 403) {
+        console.log('\n⚠️  This might be an API key issue. Please check:');
+        console.log('   - Your API key is valid and active');
+        console.log("   - You're using the correct key type (sandbox/live)");
+        console.log('   - Your account has the necessary permissions');
+      }
     }
   }
 

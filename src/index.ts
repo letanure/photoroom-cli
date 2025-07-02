@@ -23,23 +23,23 @@ function createMainMenuQuestions(hasActiveKey: boolean): SelectQuestion<MainMenu
       label: 'Main Menu',
       hint: 'Use arrow keys to navigate',
       choices: [
-        { 
-          message: 'Remove Background', 
-          name: 'removeBackground', 
+        {
+          message: 'Remove Background',
+          name: 'removeBackground',
           value: 'removeBackground',
-          disabled: !hasActiveKey,
+          disabled: !hasActiveKey
         },
-        { 
-          message: 'Image Editing', 
-          name: 'imageEditing', 
+        {
+          message: 'Image Editing',
+          name: 'imageEditing',
           value: 'imageEditing',
-          disabled: !hasActiveKey,
+          disabled: !hasActiveKey
         },
-        { 
-          message: 'Account details', 
-          name: 'accountDetails', 
+        {
+          message: 'Account details',
+          name: 'accountDetails',
           value: 'accountDetails',
-          disabled: !hasActiveKey,
+          disabled: !hasActiveKey
         },
         { message: 'Manage API keys', name: 'manageApiKeys', value: 'manageApiKeys' },
         { message: 'Exit', name: 'exit', value: 'exit' }
