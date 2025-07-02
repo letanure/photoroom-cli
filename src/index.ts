@@ -4,6 +4,7 @@ import { accountDetails } from './account-details/index.js';
 import { imageEditing } from './image-editing/index.js';
 import { manageApiKeys } from './manage-api-keys/index.js';
 import { removeBackground } from './remove-background/index.js';
+import { getActiveApiKey } from './shared/config-manager.js';
 import { askQuestions, type SelectQuestion } from './shared/question-handler.js';
 
 type MainMenuOptions = readonly [
@@ -14,28 +15,55 @@ type MainMenuOptions = readonly [
   'exit'
 ];
 
-const questions: SelectQuestion<MainMenuOptions>[] = [
-  {
-    type: 'select',
-    name: 'mainMenu',
-    label: 'Main Menu',
-    hint: 'Use arrow keys to navigate',
-    choices: [
-      { message: 'Remove Background', name: 'removeBackground', value: 'removeBackground' },
-      { message: 'Image Editing', name: 'imageEditing', value: 'imageEditing' },
-      { message: 'Account details', name: 'accountDetails', value: 'accountDetails' },
-      { message: 'Manage API keys', name: 'manageApiKeys', value: 'manageApiKeys' },
-      { message: 'Exit', name: 'exit', value: 'exit' }
-    ],
-    default: 'removeBackground'
-  }
-];
+function createMainMenuQuestions(hasActiveKey: boolean): SelectQuestion<MainMenuOptions>[] {
+  return [
+    {
+      type: 'select',
+      name: 'mainMenu',
+      label: 'Main Menu',
+      hint: 'Use arrow keys to navigate',
+      choices: [
+        { 
+          message: 'Remove Background', 
+          name: 'removeBackground', 
+          value: 'removeBackground',
+          disabled: !hasActiveKey,
+        },
+        { 
+          message: 'Image Editing', 
+          name: 'imageEditing', 
+          value: 'imageEditing',
+          disabled: !hasActiveKey,
+        },
+        { 
+          message: 'Account details', 
+          name: 'accountDetails', 
+          value: 'accountDetails',
+          disabled: !hasActiveKey,
+        },
+        { message: 'Manage API keys', name: 'manageApiKeys', value: 'manageApiKeys' },
+        { message: 'Exit', name: 'exit', value: 'exit' }
+      ],
+      default: hasActiveKey ? 'removeBackground' : 'manageApiKeys'
+    }
+  ];
+}
 
 async function main() {
   try {
-    console.log('🎨 PhotoRoom CLI\n');
+    console.log('🎨 PhotoRoom CLI');
 
     while (true) {
+      // Check for active API key on each iteration
+      const activeKey: Awaited<ReturnType<typeof getActiveApiKey>> = await getActiveApiKey();
+      if (activeKey) {
+        console.log(`\n✅ Active API key: ${activeKey.data.name} (${activeKey.data.type})`);
+      } else {
+        console.log('\n⚠️  No active API key found. Please configure one in "Manage API keys"');
+      }
+      console.log('');
+
+      const questions = createMainMenuQuestions(!!activeKey);
       const answers = await askQuestions(questions);
 
       if (answers.mainMenu === 'exit') {

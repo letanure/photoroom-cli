@@ -5,6 +5,8 @@ export interface QuestionChoice {
   message: string; // Display text
   name: string; // Internal identifier
   value: string; // Return value
+  hint?: string; // Optional hint
+  disabled?: boolean | string; // Whether the choice is disabled
 }
 
 export interface SelectQuestion<T extends readonly string[] = readonly string[]> {
@@ -97,7 +99,9 @@ async function askSingleQuestion(question: Question): Promise<unknown> {
           question.choices?.map((choice) => ({
             message: choice.message,
             name: choice.name,
-            value: choice.value
+            value: choice.value,
+            ...(choice.hint && { hint: choice.hint }),
+            ...(choice.disabled !== undefined && { disabled: choice.disabled })
           })) || [],
         ...(question.hint && { hint: question.hint }),
         ...(question.default && { initial: question.default })

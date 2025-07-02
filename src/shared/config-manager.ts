@@ -122,11 +122,9 @@ export async function addApiKey(
   };
 
   if (activate) {
-    // Deactivate other keys of the same type
+    // Deactivate ALL other keys (not just same type)
     for (const keyData of Object.values(config.apiKeys)) {
-      if (keyData.type === type) {
-        keyData.active = false;
-      }
+      keyData.active = false;
     }
     config.apiKeys[id].active = true;
     config.activeKey = id;
@@ -189,12 +187,9 @@ export async function setActiveApiKey(id: string): Promise<boolean> {
     return false;
   }
 
-  // Deactivate all keys of the same type
-  const targetType = config.apiKeys[id].type;
+  // Deactivate ALL keys
   for (const keyData of Object.values(config.apiKeys)) {
-    if (keyData.type === targetType) {
-      keyData.active = false;
-    }
+    keyData.active = false;
   }
 
   config.apiKeys[id].active = true;

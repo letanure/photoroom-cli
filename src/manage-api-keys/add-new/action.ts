@@ -45,7 +45,7 @@ export async function addNewApiKey() {
     await addApiKey(
       answers.apiKeyName as string,
       answers.apiKeyType as 'sandbox' | 'live',
-      `sk_${Math.random().toString(36).substring(2, 15)}`, // Simulated API key
+      answers.apiKeyValue as string,
       answers.activateNow as boolean
     );
   } catch (error) {
