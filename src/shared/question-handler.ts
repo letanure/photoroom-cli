@@ -18,6 +18,7 @@ export interface SelectQuestion<T extends readonly string[] = readonly string[]>
   default?: T[number];
   required?: boolean;
   subquestions?: Partial<Record<T[number], Question[]>>;
+  condition?: (answers: QuestionResults) => boolean;
 }
 
 export interface InputQuestion {
@@ -28,6 +29,7 @@ export interface InputQuestion {
   default?: string;
   required?: boolean;
   validate?: (value: string) => boolean | string;
+  condition?: (answers: QuestionResults) => boolean;
 }
 
 export interface ConfirmQuestion {
@@ -37,6 +39,7 @@ export interface ConfirmQuestion {
   hint?: string;
   default?: boolean;
   required?: boolean;
+  condition?: (answers: QuestionResults) => boolean;
 }
 
 export interface SelectImagesQuestion {
@@ -46,9 +49,40 @@ export interface SelectImagesQuestion {
   hint?: string;
   required?: boolean;
   validate?: (value: string[]) => boolean | string;
+  condition?: (answers: QuestionResults) => boolean;
 }
 
-export type Question = SelectQuestion | InputQuestion | ConfirmQuestion | SelectImagesQuestion;
+export interface NumberQuestion {
+  type: 'number';
+  name: string;
+  label: string;
+  hint?: string;
+  default?: number;
+  min?: number;
+  max?: number;
+  step?: number;
+  required?: boolean;
+  validate?: (value: number) => boolean | string;
+  condition?: (answers: QuestionResults) => boolean;
+}
+
+export interface ToggleQuestion {
+  type: 'toggle';
+  name: string;
+  label: string;
+  hint?: string;
+  default?: boolean;
+  required?: boolean;
+  condition?: (answers: QuestionResults) => boolean;
+}
+
+export type Question =
+  | SelectQuestion
+  | InputQuestion
+  | ConfirmQuestion
+  | SelectImagesQuestion
+  | NumberQuestion
+  | ToggleQuestion;
 
 export interface QuestionResults {
   [key: string]: unknown;
@@ -58,6 +92,11 @@ export async function askQuestions(questions: Question[]): Promise<QuestionResul
   const results: QuestionResults = {};
 
   for (const question of questions) {
+    // Skip question if condition is not met
+    if (question.condition && !question.condition(results)) {
+      continue;
+    }
+
     const answer = await askSingleQuestion(question);
     results[question.name] = answer;
     // Check for subquestions
@@ -113,6 +152,54 @@ async function askSingleQuestion(question: Question): Promise<unknown> {
         return await askSingleQuestion(question);
       }
       return selectedImages;
+    } else if (question.type === 'number') {
+      // Use specific NumberPrompt constructor for better functionality
+      const { NumberPrompt } = enquirer as unknown as {
+        NumberPrompt: new (options: {
+          name: string;
+          message: string;
+          hint?: string;
+          initial?: number;
+          min?: number;
+          max?: number;
+          step?: number;
+          validate?: (value: number) => boolean | string;
+        }) => { run: () => Promise<number> };
+      };
+      const numberPrompt = new NumberPrompt({
+        name: question.name,
+        message: question.label,
+        ...(question.hint && { hint: question.hint }),
+        ...(question.default !== undefined && { initial: question.default }),
+        ...(question.min !== undefined && { min: question.min }),
+        ...(question.max !== undefined && { max: question.max }),
+        ...(question.step !== undefined && { step: question.step }),
+        ...(question.validate && { validate: question.validate })
+      });
+      const result = await numberPrompt.run();
+      return result;
+    } else if (question.type === 'toggle') {
+      // Use specific Toggle constructor
+      const { Toggle } = enquirer as unknown as {
+        Toggle: new (options: {
+          name: string;
+          message: string;
+          hint?: string;
+          initial?: boolean;
+          enabled: string;
+          disabled: string;
+        }) => { run: () => Promise<boolean> };
+      };
+      const togglePrompt = new Toggle({
+        name: question.name,
+        message: question.label,
+        ...(question.hint && { hint: question.hint }),
+        ...(question.default !== undefined && { initial: question.default }),
+        enabled: 'Yes',
+        disabled: 'No'
+      });
+      const result = await togglePrompt.run();
+      return result;
     } else {
       promptConfig = {
         type: question.type,
@@ -127,10 +214,13 @@ async function askSingleQuestion(question: Question): Promise<unknown> {
       };
     }
 
-    const result = await enquirer.prompt(
-      promptConfig as unknown as Parameters<typeof enquirer.prompt>[0]
-    );
-    return (result as Record<string, unknown>)[question.name];
+    // Only use enquirer.prompt for types that need it
+    if (promptConfig) {
+      const result = await enquirer.prompt(
+        promptConfig as unknown as Parameters<typeof enquirer.prompt>[0]
+      );
+      return (result as Record<string, unknown>)[question.name];
+    }
   } catch (_error) {
     console.log('\n👋 Goodbye!');
     process.exit(0);
