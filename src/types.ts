@@ -1,9 +1,10 @@
 export type ActionType = 'remove-bg' | 'account' | 'image-editing' | 'api-keys';
 
 export interface BaseApiError {
-  detail: string;
-  status_code: number;
-  type: string;
+  detail?: string;
+  message?: string;
+  status_code?: number;
+  type?: string;
 }
 
 export interface ForbiddenError extends BaseApiError {

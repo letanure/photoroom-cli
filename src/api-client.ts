@@ -194,6 +194,19 @@ export class PhotoRoomApiClient {
       req.end();
     });
   }
+
+  async editImage(
+    imagePath: string,
+    options: Record<string, string | number | boolean | undefined>,
+    dryRun = false
+  ): Promise<{
+    data?: Buffer;
+    headers?: Record<string, string | string[] | undefined>;
+    error?: BaseApiError | ForbiddenError;
+  }> {
+    const formData = createImageEditingFormData(imagePath, options);
+    return this.makeRequest<Buffer>('/v2/edit', formData, dryRun);
+  }
 }
 
 export function createFormData(
@@ -216,6 +229,38 @@ export function createFormData(
   if (options.size) form.append('size', options.size);
   if (options.crop !== undefined) form.append('crop', options.crop.toString());
   if (options.despill !== undefined) form.append('despill', options.despill.toString());
+
+  return form;
+}
+
+export function createImageEditingFormData(
+  imagePath: string,
+  options: Record<string, string | number | boolean | undefined>
+): FormData {
+  const form = new FormData();
+
+  // Add image file with proper content type detection
+  const imageBuffer = readFileSync(imagePath);
+  const filename = imagePath.split('/').pop() || 'image.jpg';
+  const ext = filename.split('.').pop()?.toLowerCase();
+
+  let contentType = 'image/jpeg';
+  if (ext === 'png') contentType = 'image/png';
+  else if (ext === 'webp') contentType = 'image/webp';
+  else if (ext === 'gif') contentType = 'image/gif';
+  else if (ext === 'bmp') contentType = 'image/bmp';
+
+  form.append('imageFile', imageBuffer, {
+    filename,
+    contentType
+  });
+
+  // Add all other parameters if they exist
+  for (const [key, value] of Object.entries(options)) {
+    if (value !== undefined && value !== '') {
+      form.append(key, value.toString());
+    }
+  }
 
   return form;
 }

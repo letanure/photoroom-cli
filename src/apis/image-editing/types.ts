@@ -1,9 +1,62 @@
 export interface ImageEditingConfig {
   imageFile: string;
+  imageFiles?: string[];
   outputPath: string;
-  operation: 'enhance' | 'resize' | 'filter' | 'crop';
-  quality: 'low' | 'medium' | 'high' | 'ultra';
-  preserveAspectRatio: boolean;
+
+  // Core editing options
+  removeBackground?: boolean;
+  templateId?: string;
+
+  // Background options
+  'background.color'?: string;
+  'background.prompt'?: string;
+  'background.negativePrompt'?: string;
+  'background.expandPrompt'?: string;
+  'background.imageFile'?: string;
+  'background.scaling'?: string;
+  'background.seed'?: number;
+  'background.guidance.scale'?: number;
+  'background.guidance.imageFile'?: string;
+
+  // Layout and sizing
+  outputSize?: string;
+  maxWidth?: number;
+  maxHeight?: number;
+  scaling?: string;
+  horizontalAlignment?: string;
+  verticalAlignment?: string;
+
+  // Margins and padding
+  margin?: number;
+  marginTop?: number;
+  marginBottom?: number;
+  marginLeft?: number;
+  marginRight?: number;
+  padding?: number;
+  paddingTop?: number;
+  paddingBottom?: number;
+  paddingLeft?: number;
+  paddingRight?: number;
+
+  // Advanced features
+  'lighting.mode'?: string;
+  'shadow.mode'?: string;
+  'upscale.mode'?: string;
+  'textRemoval.mode'?: string;
+  'segmentation.mode'?: string;
+  'segmentation.prompt'?: string;
+  'segmentation.negativePrompt'?: string;
+  'expand.mode'?: string;
+  'expand.seed'?: number;
+
+  // Export settings
+  'export.format'?: 'png' | 'jpg' | 'webp';
+  'export.dpi'?: number;
+
+  // Other options
+  referenceBox?: string;
+  keepExistingAlphaChannel?: boolean;
+  ignorePaddingAndSnapOnCroppedSides?: boolean;
 }
 
 export interface EnhanceOptions {
@@ -45,3 +98,30 @@ export interface ImageEditingApiResponse {
     type: string;
   };
 }
+
+export interface QuestionConfig {
+  core: string[];
+  advanced: {
+    background: string[];
+    layout: string[];
+    spacing: string[];
+    effects: string[];
+  };
+}
+
+export const DEFAULT_QUESTION_CONFIG: QuestionConfig = {
+  core: ['imageFile', 'outputPath', 'removeBackground'],
+  advanced: {
+    background: ['background.prompt', 'background.color', 'background.negativePrompt'],
+    layout: [
+      'outputSize',
+      'maxWidth',
+      'maxHeight',
+      'scaling',
+      'horizontalAlignment',
+      'verticalAlignment'
+    ],
+    spacing: ['margin', 'padding'],
+    effects: ['lighting.mode', 'shadow.mode', 'upscale.mode', 'textRemoval.mode']
+  }
+};
