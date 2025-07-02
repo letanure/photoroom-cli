@@ -1,5 +1,5 @@
 import { createReadStream, promises as fs } from 'node:fs';
-import { basename } from 'node:path';
+import { basename, join, relative } from 'node:path';
 import FormData from 'form-data';
 import { getActiveApiKey } from './config-manager.js';
 
@@ -10,6 +10,7 @@ export interface RemoveBackgroundOptions {
   bg_color?: string;
   channels?: 'rgba' | 'alpha';
   despill?: boolean;
+  outputDir?: string;
 }
 
 export interface ApiErrorResponse {
@@ -191,8 +192,19 @@ export async function saveProcessedImage(
 ): Promise<string> {
   const extension = options.format || 'png';
   const baseName = basename(originalPath, `.${basename(originalPath).split('.').pop()}`);
-  const outputPath = `${baseName}_processed.${extension}`;
+  const fileName = `${baseName}_processed.${extension}`;
+
+  // Use output directory if specified, otherwise current directory
+  const outputDir = options.outputDir || '.';
+  const outputPath = join(outputDir, fileName);
+
+  // Create output directory if it doesn't exist
+  if (options.outputDir) {
+    await fs.mkdir(outputDir, { recursive: true });
+  }
 
   await fs.writeFile(outputPath, processedData);
-  return outputPath;
+
+  // Return relative path from current working directory
+  return relative(process.cwd(), outputPath);
 }

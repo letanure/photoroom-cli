@@ -1,3 +1,5 @@
+import { relative } from 'node:path';
+
 export interface ImageProcessResult {
   success: boolean;
   outputPath?: string;
@@ -19,9 +21,10 @@ export async function processImages<T>(
 
   for (const imagePath of imagePaths) {
     const result = await processor(imagePath, options);
+    const relativeInput = relative(process.cwd(), imagePath);
 
     if (result.success && result.outputPath) {
-      let message = `✅ ${imagePath} → ${result.outputPath}`;
+      let message = `✅ ${relativeInput} → ${result.outputPath}`;
 
       // Show uncertainty score if available
       if (result.uncertaintyScore !== undefined) {
@@ -37,7 +40,7 @@ export async function processImages<T>(
       successCount++;
     } else {
       console.log('\n❌ Error processing image');
-      console.log(`   File: ${imagePath}`);
+      console.log(`   File: ${relativeInput}`);
       if ('statusCode' in result && result.statusCode) {
         console.log(`   Code: ${result.statusCode}`);
       }

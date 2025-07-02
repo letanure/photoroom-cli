@@ -9,6 +9,14 @@ export const removeBackgroundQuestions: Question[] = [
     required: true
   },
   {
+    type: 'input',
+    name: 'outputDir',
+    label: 'Output directory',
+    hint: 'Directory to save processed images',
+    required: true,
+    default: 'output'
+  },
+  {
     type: 'select',
     name: 'format',
     label: 'Output format',
