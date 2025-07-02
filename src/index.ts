@@ -3,6 +3,7 @@
 import { accountDetails } from './account-details/index.js';
 import { imageEditing } from './image-editing/index.js';
 import { manageApiKeys } from './manage-api-keys/index.js';
+import { removeBackground } from './remove-background/index.js';
 import { askQuestions, type SelectQuestion } from './shared/question-handler.js';
 
 type MainMenuOptions = readonly [
@@ -44,7 +45,7 @@ async function main() {
 
       // Based on answers, decide what to call
       const actions = {
-        removeBackground: () => {},
+        removeBackground: () => removeBackground(),
         imageEditing: () => imageEditing(),
         accountDetails: () => accountDetails(),
         manageApiKeys: () => manageApiKeys()

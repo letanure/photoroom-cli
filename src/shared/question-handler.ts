@@ -1,4 +1,5 @@
 import enquirer from 'enquirer';
+import { findImages, formatImageChoice } from './image-selector.js';
 
 export interface QuestionChoice {
   message: string; // Display text
@@ -13,6 +14,7 @@ export interface SelectQuestion<T extends readonly string[] = readonly string[]>
   hint?: string;
   choices: Array<QuestionChoice & { value: T[number] }>;
   default?: T[number];
+  required?: boolean;
   subquestions?: Partial<Record<T[number], Question[]>>;
 }
 
@@ -22,6 +24,8 @@ export interface InputQuestion {
   label: string;
   hint?: string;
   default?: string;
+  required?: boolean;
+  validate?: (value: string) => boolean | string;
 }
 
 export interface ConfirmQuestion {
@@ -30,9 +34,19 @@ export interface ConfirmQuestion {
   label: string;
   hint?: string;
   default?: boolean;
+  required?: boolean;
 }
 
-export type Question = SelectQuestion | InputQuestion | ConfirmQuestion;
+export interface SelectImagesQuestion {
+  type: 'select-images';
+  name: string;
+  label: string;
+  hint?: string;
+  required?: boolean;
+  validate?: (value: string[]) => boolean | string;
+}
+
+export type Question = SelectQuestion | InputQuestion | ConfirmQuestion | SelectImagesQuestion;
 
 export interface QuestionResults {
   [key: string]: unknown;
@@ -53,6 +67,17 @@ export async function askQuestions(questions: Question[]): Promise<QuestionResul
     ) {
       const subResults = await askQuestions(question.subquestions[answer]);
       Object.assign(results, subResults);
+    }
+
+    // Handle validation for input questions that bypassed single question validation
+    if (question.type === 'input' && question.validate && typeof answer === 'string') {
+      const validation = question.validate(answer);
+      if (validation !== true) {
+        console.log(`\n❌ ${validation}`);
+        // Re-ask the question
+        const retryAnswer = await askSingleQuestion(question);
+        results[question.name] = retryAnswer;
+      }
     }
   }
 
@@ -77,13 +102,24 @@ async function askSingleQuestion(question: Question): Promise<unknown> {
         ...(question.hint && { hint: question.hint }),
         ...(question.default && { initial: question.default })
       };
+    } else if (question.type === 'select-images') {
+      const selectedImages = await handleImageSelection(question);
+      if (question.required && selectedImages.length === 0) {
+        console.log('\n❌ At least one image is required.');
+        return await askSingleQuestion(question);
+      }
+      return selectedImages;
     } else {
       promptConfig = {
         type: question.type,
         name: question.name,
         message: question.label,
         ...(question.hint && { hint: question.hint }),
-        ...(question.default && { initial: question.default })
+        ...(question.default && { initial: question.default }),
+        ...(question.type === 'input' &&
+          question.validate && {
+            validate: question.validate
+          })
       };
     }
 
@@ -95,4 +131,51 @@ async function askSingleQuestion(question: Question): Promise<unknown> {
     console.log('\n👋 Goodbye!');
     process.exit(0);
   }
+}
+
+async function handleImageSelection(question: SelectImagesQuestion): Promise<string[]> {
+  const images = await findImages();
+
+  if (images.length === 0) {
+    console.log('\n❌ No images found in the current directory.');
+    console.log('Supported formats: .jpg, .jpeg, .png, .webp, .bmp, .tiff, .gif');
+    return [];
+  }
+
+  // Images will be shown in the selection prompt
+
+  const validImages = images.filter((img) => img.isValid);
+  if (validImages.length === 0) {
+    console.log('\n❌ No valid images found (all exceed size/resolution limits).');
+    return [];
+  }
+
+  // Create choices for valid images
+  const choices = [
+    { message: 'All valid images', name: 'all', value: 'all' },
+    ...validImages.map((image, index) => ({
+      message: formatImageChoice(image),
+      name: `image-${index}`,
+      value: image.path
+    }))
+  ];
+
+  const promptConfig = {
+    type: 'multiselect',
+    name: 'selectedImages',
+    message: question.label,
+    choices,
+    ...(question.hint && { hint: question.hint }),
+    limit: 10 // Limit visible choices to avoid overwhelming display
+  };
+
+  const result = await enquirer.prompt(promptConfig);
+  const selected = (result as { selectedImages: string[] }).selectedImages;
+
+  // If 'all' is selected, return all valid image paths
+  if (selected.includes('all')) {
+    return validImages.map((img) => img.path);
+  }
+
+  return selected;
 }

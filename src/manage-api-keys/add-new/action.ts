@@ -1,5 +1,5 @@
 import { addApiKey, listApiKeys } from '../../shared/config-manager.js';
-import { askQuestions } from '../../shared/question-handler.js';
+import { askQuestions, type InputQuestion } from '../../shared/question-handler.js';
 import { addNewApiKeyQuestions } from './questions.js';
 
 async function suggestApiKeyName(type: 'sandbox' | 'live'): Promise<string> {
@@ -27,10 +27,10 @@ async function updateQuestionsWithDynamicDefaults() {
   const updatedQuestions = [...addNewApiKeyQuestions];
   if (updatedQuestions[0]?.subquestions) {
     if (updatedQuestions[0].subquestions.sandbox?.[0]) {
-      updatedQuestions[0].subquestions.sandbox[0].default = sandboxSuggestion;
+      (updatedQuestions[0].subquestions.sandbox[0] as InputQuestion).default = sandboxSuggestion;
     }
     if (updatedQuestions[0].subquestions.live?.[0]) {
-      updatedQuestions[0].subquestions.live[0].default = liveSuggestion;
+      (updatedQuestions[0].subquestions.live[0] as InputQuestion).default = liveSuggestion;
     }
   }
 
