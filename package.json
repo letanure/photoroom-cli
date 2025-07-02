@@ -34,7 +34,9 @@
     "release:minor": "npm run check && npm run build && standard-version --release-as minor",
     "release:major": "npm run check && npm run build && standard-version --release-as major",
     "release:patch": "npm run check && npm run build && standard-version --release-as patch",
-    "release:dry-run": "standard-version --dry-run"
+    "release:dry-run": "standard-version --dry-run",
+    "prepublishOnly": "npm run check && npm run build",
+    "postpublish": "git push && git push --tags"
   },
   "keywords": [
     "photoroom",
@@ -42,12 +44,29 @@
     "api",
     "background-removal",
     "image-processing",
+    "image-editing",
     "ai",
-    "automation"
+    "automation",
+    "typescript",
+    "nodejs"
   ],
-  "author": "letanure",
+  "author": {
+    "name": "Luiz Tanure",
+    "email": "letanure@gmail.com",
+    "url": "https://github.com/letanure"
+  },
   "license": "MIT",
   "type": "module",
+  "files": [
+    "dist/**/*",
+    "README.md",
+    "LICENSE",
+    "CHANGELOG.md"
+  ],
+  "engines": {
+    "node": ">=18.0.0",
+    "npm": ">=8.0.0"
+  },
   "devDependencies": {
     "@biomejs/biome": "^2.0.6",
     "@commitlint/cli": "^19.8.1",
