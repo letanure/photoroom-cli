@@ -34,29 +34,26 @@ async function main() {
   try {
     console.log('🎨 PhotoRoom CLI\n');
 
-    const answers = await askQuestions(questions);
+    while (true) {
+      const answers = await askQuestions(questions);
 
-    // Based on answers, decide what to call
-    const actions = {
-      removeBackground: () => {},
-      imageEditing: () => {
-        imageEditing();
-      },
-      accountDetails: () => {
-        accountDetails();
-      },
-      manageApiKeys: () => {
-        manageApiKeys();
-      },
-      exit: () => {
+      if (answers.mainMenu === 'exit') {
         console.log('\n👋 Goodbye!');
         process.exit(0);
       }
-    };
 
-    const action = actions[answers.mainMenu as keyof typeof actions];
-    if (action) {
-      action();
+      // Based on answers, decide what to call
+      const actions = {
+        removeBackground: () => {},
+        imageEditing: () => imageEditing(),
+        accountDetails: () => accountDetails(),
+        manageApiKeys: () => manageApiKeys()
+      };
+
+      const action = actions[answers.mainMenu as keyof typeof actions];
+      if (action) {
+        await action();
+      }
     }
   } catch (error) {
     console.error('❌ Error:', error);

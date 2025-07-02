@@ -44,7 +44,6 @@ export async function askQuestions(questions: Question[]): Promise<QuestionResul
   for (const question of questions) {
     const answer = await askSingleQuestion(question);
     results[question.name] = answer;
-    console.log(`----------\n ${question.label}: ${answer}`);
     // Check for subquestions
     if (
       question.type === 'select' &&
