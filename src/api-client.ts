@@ -100,11 +100,28 @@ export class PhotoRoomApiClient {
                 error: errorData
               });
             } catch {
+              // Handle non-JSON error responses
+              const responseText = body.toString();
+              let errorMessage = 'Unknown error occurred';
+
+              if (res.statusCode === 402) {
+                errorMessage =
+                  'API credits exhausted. Visit https://app.photoroom.com/api-dashboard to purchase more credits';
+              } else if (res.statusCode === 400) {
+                errorMessage = `Bad request: ${responseText || 'Invalid parameters'}`;
+              } else if (res.statusCode === 403) {
+                errorMessage = 'Forbidden: Check your API key and permissions';
+              } else if (res.statusCode === 500) {
+                errorMessage = 'Server error: Please try again later or contact support';
+              } else if (responseText.trim()) {
+                errorMessage = responseText;
+              }
+
               resolve({
                 error: {
-                  detail: 'Unknown error occurred',
+                  detail: errorMessage,
                   status_code: res.statusCode || 500,
-                  type: 'unknown_error'
+                  type: 'api_error'
                 }
               });
             }

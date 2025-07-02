@@ -40,6 +40,10 @@ export async function handleImageEditing(options?: {
     console.log(`Created output directory: ${config.outputPath}`);
   }
 
+  let successCount = 0;
+  let failureCount = 0;
+  const errors: Array<{ image: string; error: string }> = [];
+
   for (let i = 0; i < imagesToProcess.length; i++) {
     const imagePath = imagesToProcess[i];
     if (!imagePath) continue;
@@ -69,8 +73,31 @@ export async function handleImageEditing(options?: {
       const response = await client.editImage(imagePath, apiOptions, false);
 
       if (response.error) {
-        const errorMessage = response.error.detail || response.error.message || 'Unknown error';
-        console.log(`Error processing ${basename(imagePath)}: ${errorMessage}`);
+        let errorMessage = 'Unknown error';
+
+        // Handle different error response structures
+        if (response.error.error?.detail) {
+          errorMessage = response.error.error.detail;
+        } else if (response.error.error?.message) {
+          errorMessage = response.error.error.message;
+        } else if (response.error.detail) {
+          errorMessage = response.error.detail;
+        } else if (response.error.message) {
+          errorMessage = response.error.message;
+        }
+
+        // Special handling for known error types
+        if (errorMessage.includes('API credits exhausted')) {
+          console.log(`❌ Failed: ${basename(imagePath)} - Out of API credits`);
+          console.log('   Visit https://app.photoroom.com/api-dashboard to purchase more credits');
+        } else if (errorMessage.includes('must be boolean')) {
+          console.log(`❌ Failed: ${basename(imagePath)} - Invalid parameter format`);
+        } else {
+          console.log(`❌ Failed: ${basename(imagePath)} - ${errorMessage}`);
+        }
+
+        failureCount++;
+        errors.push({ image: basename(imagePath), error: errorMessage });
         continue;
       }
 
@@ -95,15 +122,51 @@ export async function handleImageEditing(options?: {
         }
 
         writeFileSync(finalOutputPath, response.data);
-        console.log(`✅ Saved: ${finalOutputPath}`);
+        console.log(`✅ Success: ${basename(imagePath)} → ${basename(finalOutputPath)}`);
+        successCount++;
       }
     } catch (error) {
-      console.log(
-        `Error processing ${basename(imagePath)}: ${error instanceof Error ? error.message : error}`
-      );
-      console.log('Full error:', error);
+      const errorMessage = error instanceof Error ? error.message : String(error);
+      console.log(`❌ Failed: ${basename(imagePath)} - ${errorMessage}`);
+      failureCount++;
+      errors.push({ image: basename(imagePath), error: errorMessage });
     }
   }
 
-  console.log(`\n🎉 Processing complete! Check output directory: ${config.outputPath}`);
+  // Final summary
+  console.log(`\n${'='.repeat(60)}`);
+  console.log('Processing Summary');
+  console.log('='.repeat(60));
+
+  if (successCount > 0) {
+    console.log(`✅ Successfully processed: ${successCount} image(s)`);
+    console.log(`   Output directory: ${config.outputPath}`);
+  }
+
+  if (failureCount > 0) {
+    console.log(`❌ Failed to process: ${failureCount} image(s)`);
+
+    // Group errors by type
+    const creditErrors = errors.filter((e) => e.error.includes('API credits'));
+    const otherErrors = errors.filter((e) => !e.error.includes('API credits'));
+
+    if (creditErrors.length > 0) {
+      console.log('\n   API Credits Exhausted:');
+      creditErrors.forEach((e) => console.log(`   - ${e.image}`));
+      console.log('\n   💡 Visit https://app.photoroom.com/api-dashboard to purchase more credits');
+    }
+
+    if (otherErrors.length > 0) {
+      console.log('\n   Other Errors:');
+      otherErrors.forEach((e) => console.log(`   - ${e.image}: ${e.error}`));
+    }
+  }
+
+  if (successCount === 0 && failureCount > 0) {
+    console.log('\n⚠️  No images were successfully processed');
+  } else if (successCount === imagesToProcess.length) {
+    console.log('\n🎉 All images processed successfully!');
+  } else if (successCount > 0 && failureCount > 0) {
+    console.log('\n⚠️  Some images failed to process');
+  }
 }

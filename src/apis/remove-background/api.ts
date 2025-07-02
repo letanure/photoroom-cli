@@ -26,15 +26,26 @@ export async function removeBackground(
   const response = await client.makeRequest<Buffer>('/v1/segment', formData, config.dryRun);
 
   if (response.error) {
-    console.error('\n❌ Error:', response.error.detail);
-    console.error(`Status: ${response.error.status_code}`);
-    console.error(`Type: ${response.error.type}`);
+    let errorMessage = 'Unknown error';
 
-    if (response.error.status_code === 403) {
-      console.error('\n💡 Tip: Check your API key and plan limits');
+    // Try multiple ways to extract the error message
+    if (response.error.error?.detail) {
+      errorMessage = response.error.error.detail;
+    } else if (response.error.error?.message) {
+      errorMessage = response.error.error.message;
+    } else if (response.error.detail) {
+      errorMessage = response.error.detail;
+    } else if (response.error.message) {
+      errorMessage = response.error.message;
+    } else if (typeof response.error === 'string') {
+      errorMessage = response.error;
+    } else {
+      // Last resort: stringify the error object
+      errorMessage = JSON.stringify(response.error);
     }
 
-    process.exit(1);
+    // Throw error instead of process.exit to allow batch processing
+    throw new Error(errorMessage);
   }
 
   if (response.data) {

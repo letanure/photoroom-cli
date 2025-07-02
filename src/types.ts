@@ -5,6 +5,10 @@ export interface BaseApiError {
   message?: string;
   status_code?: number;
   type?: string;
+  error?: {
+    message?: string;
+    detail?: string;
+  };
 }
 
 export interface ForbiddenError extends BaseApiError {
