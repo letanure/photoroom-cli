@@ -1,5 +1,5 @@
 import { createFormData, PhotoRoomApiClient } from '../../api-client.js';
-import type { RemoveBackgroundConfig } from './types.js';
+import type { RemoveBackgroundApiError, RemoveBackgroundConfig } from './types.js';
 
 export interface ProcessResult {
   success: boolean;
@@ -38,21 +38,23 @@ export async function processImage(
     const response = await client.makeRequest<Buffer>('/v1/segment', formData, false);
 
     if (response.error) {
-      let errorMessage = 'Unknown error';
+      const apiError = response.error as RemoveBackgroundApiError;
 
-      // Try multiple ways to extract the error message
-      if (response.error.error?.detail) {
-        errorMessage = response.error.error.detail;
-      } else if (response.error.error?.message) {
-        errorMessage = response.error.error.message;
-      } else if (response.error.detail) {
-        errorMessage = response.error.detail;
-      } else if (response.error.message) {
-        errorMessage = response.error.message;
-      } else if (typeof response.error === 'string') {
-        errorMessage = response.error;
-      } else {
-        errorMessage = JSON.stringify(response.error);
+      // Handle specific error types based on status codes
+      let errorMessage: string;
+      switch (apiError.status_code) {
+        case 400:
+          errorMessage = `Bad Request: ${apiError.detail}`;
+          break;
+        case 402:
+          errorMessage =
+            'API credits exhausted. Visit https://app.photoroom.com/api-dashboard to purchase more credits';
+          break;
+        case 403:
+          errorMessage = `Access Forbidden: ${apiError.detail}`;
+          break;
+        default:
+          errorMessage = `API Error (${apiError.status_code}): ${apiError.detail}`;
       }
 
       return {

@@ -17,13 +17,24 @@ export interface PhotoRoomApiResponse {
   headers?: {
     'x-uncertainty-score'?: string;
   };
-  error?: PhotoRoomApiError;
+  error?: RemoveBackgroundApiError;
 }
 
-export interface PhotoRoomApiError {
+export interface RemoveBackgroundApiError {
   detail: string;
   status_code: number;
   type: string;
+}
+
+export interface RemoveBackgroundSuccessResponse {
+  data: Buffer;
+  headers: {
+    'x-uncertainty-score'?: string;
+  };
+}
+
+export interface RemoveBackgroundErrorResponse {
+  error: RemoveBackgroundApiError;
 }
 
 export interface UncertaintyScore {
