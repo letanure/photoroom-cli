@@ -16,6 +16,54 @@ const commonEditingQuestions: Question[] = [
     label: 'Remove background?',
     hint: 'Remove the background from the image',
     default: true
+  },
+  {
+    type: 'input',
+    name: 'backgroundColor',
+    label: 'Background color',
+    hint: 'Hex color (FF0000, #FF0000) or color name (red, blue)',
+    required: false,
+    default: 'transparent',
+    validate: (value: string) => {
+      if (!value || value.trim() === '') return true; // Empty is OK
+
+      const trimmedValue = value.trim();
+
+      // Check for 'transparent'
+      if (trimmedValue.toLowerCase() === 'transparent') return true;
+
+      // Check hex format (with or without #, 6 or 8 characters)
+      const hexPattern = /^#?[A-Fa-f0-9]{6}([A-Fa-f0-9]{2})?$/;
+      if (hexPattern.test(trimmedValue)) return true;
+
+      // Check common color names
+      const colorNames = [
+        'red',
+        'green',
+        'blue',
+        'yellow',
+        'orange',
+        'purple',
+        'pink',
+        'black',
+        'white',
+        'gray',
+        'grey',
+        'brown',
+        'cyan',
+        'magenta',
+        'lime',
+        'navy',
+        'teal',
+        'silver',
+        'maroon',
+        'olive'
+      ];
+
+      if (colorNames.includes(trimmedValue.toLowerCase())) return true;
+
+      return 'Must be a hex color (FF0000, #FF0000) or color name (red, blue, etc.)';
+    }
   }
   // TODO: Add more editing parameters here (background type, size, etc.)
 ];
