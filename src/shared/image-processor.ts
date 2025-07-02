@@ -1,4 +1,5 @@
 import { relative } from 'node:path';
+import type { ConflictState } from './file-conflict-handler.js';
 
 export interface ImageProcessResult {
   success: boolean;
@@ -8,7 +9,11 @@ export interface ImageProcessResult {
   [key: string]: unknown; // Allow additional properties
 }
 
-export type ImageProcessor<T> = (imagePath: string, options: T) => Promise<ImageProcessResult>;
+export type ImageProcessor<T> = (
+  imagePath: string,
+  options: T,
+  conflictState: ConflictState
+) => Promise<ImageProcessResult>;
 
 export async function processImages<T>(
   imagePaths: string[],
@@ -18,9 +23,13 @@ export async function processImages<T>(
   console.log(`\n🚀 Processing ${imagePaths.length} image(s)...`);
 
   let successCount = 0;
+  const conflictState: ConflictState = {
+    overwriteAll: false,
+    renameAll: false
+  };
 
   for (const imagePath of imagePaths) {
-    const result = await processor(imagePath, options);
+    const result = await processor(imagePath, options, conflictState);
     const relativeInput = relative(process.cwd(), imagePath);
 
     if (result.success && result.outputPath) {

@@ -3,11 +3,13 @@ import {
   removeBackgroundApi,
   saveProcessedImage
 } from '../shared/api-client.js';
+import type { ConflictState } from '../shared/file-conflict-handler.js';
 import type { ImageProcessResult } from '../shared/image-processor.js';
 
 export async function processRemoveBackground(
   imagePath: string,
-  options: RemoveBackgroundOptions
+  options: RemoveBackgroundOptions,
+  conflictState: ConflictState
 ): Promise<ImageProcessResult> {
   try {
     const results = await removeBackgroundApi([imagePath], options);
@@ -22,7 +24,15 @@ export async function processRemoveBackground(
 
     if (result.success && result.data) {
       try {
-        const outputPath = await saveProcessedImage(imagePath, result.data, options);
+        const outputPath = await saveProcessedImage(imagePath, result.data, options, conflictState);
+
+        if (outputPath === null) {
+          return {
+            success: false,
+            error: 'Operation cancelled by user'
+          };
+        }
+
         return {
           success: true,
           outputPath,

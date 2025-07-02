@@ -2,6 +2,7 @@ import { createReadStream, promises as fs } from 'node:fs';
 import { basename, join, relative } from 'node:path';
 import FormData from 'form-data';
 import { getActiveApiKey } from './config-manager.js';
+import { type ConflictState, handleFileConflict } from './file-conflict-handler.js';
 
 export interface RemoveBackgroundOptions {
   format?: 'png' | 'jpg' | 'webp';
@@ -188,8 +189,9 @@ async function processImage(
 export async function saveProcessedImage(
   originalPath: string,
   processedData: Buffer,
-  options: RemoveBackgroundOptions
-): Promise<string> {
+  options: RemoveBackgroundOptions,
+  conflictState: ConflictState
+): Promise<string | null> {
   const extension = options.format || 'png';
   const baseName = basename(originalPath, `.${basename(originalPath).split('.').pop()}`);
   const fileName = `${baseName}_processed.${extension}`;
@@ -203,8 +205,19 @@ export async function saveProcessedImage(
     await fs.mkdir(outputDir, { recursive: true });
   }
 
-  await fs.writeFile(outputPath, processedData);
+  // Handle file conflicts
+  const resolution = await handleFileConflict(outputPath, conflictState);
+
+  if (resolution.action === 'cancel') {
+    return null; // Operation cancelled
+  }
+
+  const finalPath = resolution.newPath;
+  if (!finalPath) {
+    throw new Error('No output path provided');
+  }
+  await fs.writeFile(finalPath, processedData);
 
   // Return relative path from current working directory
-  return relative(process.cwd(), outputPath);
+  return relative(process.cwd(), finalPath);
 }
