@@ -78,6 +78,8 @@ export async function askImageEditingParams(): Promise<ImageEditingParams> {
   const imageSourceResults = await askQuestions(imageSourceQuestions);
   Object.assign(responses, imageSourceResults);
 
+  // === BACKGROUND CONFIGURATION ===
+  console.log('\n🎨 Background Configuration');
   const backgroundResult = (await enquirer.prompt({
     type: 'confirm',
     name: 'configureBackground',
@@ -126,54 +128,8 @@ export async function askImageEditingParams(): Promise<ImageEditingParams> {
     responses.background = background;
   }
 
-  const expandResult = (await enquirer.prompt({
-    type: 'confirm',
-    name: 'configureExpand',
-    message: 'Do you want to configure expand mode?'
-  })) as { configureExpand: boolean };
-  responses.configureExpand = expandResult.configureExpand;
-
-  if (expandResult.configureExpand) {
-    const expand = await enquirer.prompt([
-      {
-        type: 'select',
-        name: 'mode',
-        message: 'Select expand mode:',
-        choices: ['ai.auto']
-      },
-      {
-        type: 'input',
-        name: 'seed',
-        message: 'Expand seed (integer, optional):'
-      }
-    ]);
-    responses.expand = expand;
-  }
-
-  const exportResult = (await enquirer.prompt({
-    type: 'confirm',
-    name: 'configureExport',
-    message: 'Do you want to set export options?'
-  })) as { configureExport: boolean };
-  responses.configureExport = exportResult.configureExport;
-
-  if (exportResult.configureExport) {
-    const exportOptions = await enquirer.prompt([
-      {
-        type: 'input',
-        name: 'dpi',
-        message: 'DPI (optional):'
-      },
-      {
-        type: 'select',
-        name: 'format',
-        message: 'Select export format:',
-        choices: ['png', 'jpeg']
-      }
-    ]);
-    responses.export = exportOptions;
-  }
-
+  // === LAYOUT & POSITIONING ===
+  console.log('\n📐 Layout & Positioning');
   const layout = await enquirer.prompt([
     {
       type: 'select',
@@ -206,6 +162,8 @@ export async function askImageEditingParams(): Promise<ImageEditingParams> {
   ]);
   responses.layout = layout;
 
+  // === SPACING & MARGINS ===
+  console.log('\n📏 Spacing & Margins');
   const margins = await enquirer.prompt([
     {
       type: 'input',
@@ -219,6 +177,58 @@ export async function askImageEditingParams(): Promise<ImageEditingParams> {
     }
   ]);
   responses.margins = margins;
+
+  // === ADVANCED OPTIONS ===
+  console.log('\n⚙️ Advanced Options');
+  const expandResult = (await enquirer.prompt({
+    type: 'confirm',
+    name: 'configureExpand',
+    message: 'Do you want to configure expand mode?'
+  })) as { configureExpand: boolean };
+  responses.configureExpand = expandResult.configureExpand;
+
+  if (expandResult.configureExpand) {
+    const expand = await enquirer.prompt([
+      {
+        type: 'select',
+        name: 'mode',
+        message: 'Select expand mode:',
+        choices: ['ai.auto']
+      },
+      {
+        type: 'input',
+        name: 'seed',
+        message: 'Expand seed (integer, optional):'
+      }
+    ]);
+    responses.expand = expand;
+  }
+
+  // === OUTPUT & EXPORT SETTINGS ===
+  console.log('\n💾 Output & Export Settings');
+  const exportResult = (await enquirer.prompt({
+    type: 'confirm',
+    name: 'configureExport',
+    message: 'Do you want to set export options?'
+  })) as { configureExport: boolean };
+  responses.configureExport = exportResult.configureExport;
+
+  if (exportResult.configureExport) {
+    const exportOptions = await enquirer.prompt([
+      {
+        type: 'input',
+        name: 'dpi',
+        message: 'DPI (optional):'
+      },
+      {
+        type: 'select',
+        name: 'format',
+        message: 'Select export format:',
+        choices: ['png', 'jpeg']
+      }
+    ]);
+    responses.export = exportOptions;
+  }
 
   const output = await enquirer.prompt([
     {
