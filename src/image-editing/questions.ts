@@ -164,19 +164,110 @@ export async function askImageEditingParams(): Promise<ImageEditingParams> {
 
   // === SPACING & MARGINS ===
   console.log('\n📏 Spacing & Margins');
-  const margins = await enquirer.prompt([
-    {
-      type: 'input',
-      name: 'margin',
-      message: 'Margin (optional):'
-    },
-    {
-      type: 'input',
-      name: 'padding',
-      message: 'Padding (optional):'
+  
+  // Margin configuration
+  const marginConfig = (await enquirer.prompt({
+    type: 'confirm',
+    name: 'setMargins',
+    message: 'Do you want to set margins?'
+  })) as { setMargins: boolean };
+  
+  if (marginConfig.setMargins) {
+    const marginStyle = (await enquirer.prompt({
+      type: 'select',
+      name: 'marginStyle',
+      message: 'Margin configuration:',
+      choices: [
+        { name: 'uniform', message: 'Same margin for all sides' },
+        { name: 'individual', message: 'Individual margins for each side' }
+      ]
+    })) as { marginStyle: 'uniform' | 'individual' };
+    
+    if (marginStyle.marginStyle === 'uniform') {
+      const uniformMargin = await enquirer.prompt({
+        type: 'input',
+        name: 'margin',
+        message: 'Margin for all sides:'
+      });
+      responses.margin = (uniformMargin as { margin: string }).margin;
+    } else {
+      const individualMargins = await enquirer.prompt([
+        {
+          type: 'input',
+          name: 'marginTop',
+          message: 'Top margin:'
+        },
+        {
+          type: 'input',
+          name: 'marginRight',
+          message: 'Right margin:'
+        },
+        {
+          type: 'input',
+          name: 'marginBottom',
+          message: 'Bottom margin:'
+        },
+        {
+          type: 'input',
+          name: 'marginLeft',
+          message: 'Left margin:'
+        }
+      ]);
+      responses.margins = individualMargins;
     }
-  ]);
-  responses.margins = margins;
+  }
+  
+  // Padding configuration
+  const paddingConfig = (await enquirer.prompt({
+    type: 'confirm',
+    name: 'setPadding',
+    message: 'Do you want to set padding?'
+  })) as { setPadding: boolean };
+  
+  if (paddingConfig.setPadding) {
+    const paddingStyle = (await enquirer.prompt({
+      type: 'select',
+      name: 'paddingStyle',
+      message: 'Padding configuration:',
+      choices: [
+        { name: 'uniform', message: 'Same padding for all sides' },
+        { name: 'individual', message: 'Individual padding for each side' }
+      ]
+    })) as { paddingStyle: 'uniform' | 'individual' };
+    
+    if (paddingStyle.paddingStyle === 'uniform') {
+      const uniformPadding = await enquirer.prompt({
+        type: 'input',
+        name: 'padding',
+        message: 'Padding for all sides:'
+      });
+      responses.padding = (uniformPadding as { padding: string }).padding;
+    } else {
+      const individualPadding = await enquirer.prompt([
+        {
+          type: 'input',
+          name: 'paddingTop',
+          message: 'Top padding:'
+        },
+        {
+          type: 'input',
+          name: 'paddingRight',
+          message: 'Right padding:'
+        },
+        {
+          type: 'input',
+          name: 'paddingBottom',
+          message: 'Bottom padding:'
+        },
+        {
+          type: 'input',
+          name: 'paddingLeft',
+          message: 'Left padding:'
+        }
+      ]);
+      responses.padding = individualPadding;
+    }
+  }
 
   // === ADVANCED OPTIONS ===
   console.log('\n⚙️ Advanced Options');
