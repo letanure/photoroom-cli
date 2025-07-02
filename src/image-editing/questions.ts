@@ -164,14 +164,14 @@ export async function askImageEditingParams(): Promise<ImageEditingParams> {
 
   // === SPACING & MARGINS ===
   console.log('\n📏 Spacing & Margins');
-  
+
   // Margin configuration
   const marginConfig = (await enquirer.prompt({
     type: 'confirm',
     name: 'setMargins',
     message: 'Do you want to set margins?'
   })) as { setMargins: boolean };
-  
+
   if (marginConfig.setMargins) {
     const marginStyle = (await enquirer.prompt({
       type: 'select',
@@ -182,7 +182,7 @@ export async function askImageEditingParams(): Promise<ImageEditingParams> {
         { name: 'individual', message: 'Individual margins for each side' }
       ]
     })) as { marginStyle: 'uniform' | 'individual' };
-    
+
     if (marginStyle.marginStyle === 'uniform') {
       const uniformMargin = await enquirer.prompt({
         type: 'input',
@@ -216,14 +216,14 @@ export async function askImageEditingParams(): Promise<ImageEditingParams> {
       responses.margins = individualMargins;
     }
   }
-  
+
   // Padding configuration
   const paddingConfig = (await enquirer.prompt({
     type: 'confirm',
     name: 'setPadding',
     message: 'Do you want to set padding?'
   })) as { setPadding: boolean };
-  
+
   if (paddingConfig.setPadding) {
     const paddingStyle = (await enquirer.prompt({
       type: 'select',
@@ -234,7 +234,7 @@ export async function askImageEditingParams(): Promise<ImageEditingParams> {
         { name: 'individual', message: 'Individual padding for each side' }
       ]
     })) as { paddingStyle: 'uniform' | 'individual' };
-    
+
     if (paddingStyle.paddingStyle === 'uniform') {
       const uniformPadding = await enquirer.prompt({
         type: 'input',
