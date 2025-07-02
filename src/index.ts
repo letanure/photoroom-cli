@@ -7,7 +7,7 @@ import { imageEditing } from './image-editing/index.js';
 import { manageApiKeys } from './manage-api-keys/index.js';
 import { removeBackground } from './remove-background/index.js';
 import { getActiveApiKey } from './shared/config-manager.js';
-import { setDebugMode } from './shared/debug.js';
+import { isDryRunEnabled, setDebugMode, setDryRunMode } from './shared/debug.js';
 import { askQuestions, type SelectQuestion } from './shared/question-handler.js';
 
 type MainMenuOptions = readonly [
@@ -62,6 +62,11 @@ async function main() {
         description: 'Enable debug mode to log API requests and responses',
         default: false
       })
+      .option('dry-run', {
+        type: 'boolean',
+        description: 'Show what requests would be made without executing them',
+        default: false
+      })
       .help()
       .alias('help', 'h')
       .version()
@@ -74,6 +79,11 @@ async function main() {
       console.log('🐛 Debug mode enabled');
     }
 
+    // Enable dry-run mode if flag is set
+    if (argv['dry-run']) {
+      setDryRunMode(true);
+    }
+
     console.log('🎨 PhotoRoom CLI');
 
     while (true) {
@@ -83,6 +93,11 @@ async function main() {
         console.log(`\n✅ Active API key: ${activeKey.data.name} (${activeKey.data.type})`);
       } else {
         console.log('\n⚠️  No active API key found. Please configure one in "Manage API keys"');
+      }
+
+      // Show dry-run banner if enabled
+      if (isDryRunEnabled()) {
+        console.log('\n🔧 DRY-RUN MODE: No actual API requests will be made');
       }
       console.log('');
 

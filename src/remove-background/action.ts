@@ -3,6 +3,7 @@ import {
   removeBackgroundApi,
   saveProcessedImage
 } from '../shared/api-client.js';
+import { isDryRunEnabled } from '../shared/debug.js';
 import type { ConflictState } from '../shared/file-conflict-handler.js';
 import type { ImageProcessResult } from '../shared/image-processor.js';
 
@@ -24,7 +25,16 @@ export async function processRemoveBackground(
 
     if (result.success && result.data) {
       try {
-        const outputPath = await saveProcessedImage(imagePath, result.data, options, conflictState);
+        let outputPath: string | null;
+
+        // In dry-run mode, generate mock output path without saving
+        if (isDryRunEnabled()) {
+          const extension = options.format || 'png';
+          const baseName = imagePath.split('/').pop()?.split('.')[0] || 'image';
+          outputPath = `${options.outputDir || '.'}/${baseName}_processed.${extension}`;
+        } else {
+          outputPath = await saveProcessedImage(imagePath, result.data, options, conflictState);
+        }
 
         if (outputPath === null) {
           return {

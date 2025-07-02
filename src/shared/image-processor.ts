@@ -1,4 +1,5 @@
 import { relative } from 'node:path';
+import { isDryRunEnabled } from './debug.js';
 import type { ConflictState } from './file-conflict-handler.js';
 
 export interface ImageProcessResult {
@@ -33,7 +34,8 @@ export async function processImages<T>(
     const relativeInput = relative(process.cwd(), imagePath);
 
     if (result.success && result.outputPath) {
-      let message = `✅ ${relativeInput} → ${result.outputPath}`;
+      const prefix = isDryRunEnabled() ? '🔧 [DRY-RUN]' : '✅';
+      let message = `${prefix} ${relativeInput} → ${result.outputPath}`;
 
       // Show uncertainty score if available
       if (result.uncertaintyScore !== undefined) {
@@ -43,6 +45,10 @@ export async function processImages<T>(
           const confidence = ((1 - result.uncertaintyScore) * 100).toFixed(0);
           message += ` (${confidence}% confidence)`;
         }
+      }
+
+      if (isDryRunEnabled()) {
+        message += ' (not actually saved)';
       }
 
       console.log(message);

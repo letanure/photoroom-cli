@@ -2,7 +2,7 @@ import { createReadStream, promises as fs } from 'node:fs';
 import { basename, join, relative } from 'node:path';
 import FormData from 'form-data';
 import { getActiveApiKey } from './config-manager.js';
-import { debugLogRequest, debugLogResponse } from './debug.js';
+import { debugLogRequest, debugLogResponse, isDryRunEnabled, logCurlCommand } from './debug.js';
 import { type ConflictState, handleFileConflict } from './file-conflict-handler.js';
 
 export interface RemoveBackgroundOptions {
@@ -186,6 +186,17 @@ async function processImage(
     };
 
     debugLogRequest(url, 'POST', headers, form);
+    logCurlCommand(url, 'POST', headers, form, imagePath);
+
+    // Return mock response in dry-run mode
+    if (isDryRunEnabled()) {
+      resolve({
+        success: true,
+        data: Buffer.from('fake-image-data'),
+        uncertaintyScore: 0.1
+      });
+      return;
+    }
 
     const request = form.submit(
       {
@@ -368,6 +379,16 @@ async function processImageEditingUrl(
     };
 
     debugLogRequest(url, 'GET', headers);
+    logCurlCommand(url, 'GET', headers, undefined, imageUrl);
+
+    // Return mock response in dry-run mode
+    if (isDryRunEnabled()) {
+      return {
+        success: true,
+        data: Buffer.from('fake-image-data'),
+        uncertaintyScore: 0.1
+      };
+    }
 
     const response = await fetch(url, {
       method: 'GET',
@@ -404,6 +425,17 @@ async function processImageEditingFile(
     };
 
     debugLogRequest(url, 'POST', headers, form);
+    logCurlCommand(url, 'POST', headers, form, imagePath);
+
+    // Return mock response in dry-run mode
+    if (isDryRunEnabled()) {
+      resolve({
+        success: true,
+        data: Buffer.from('fake-image-data'),
+        uncertaintyScore: 0.1
+      });
+      return;
+    }
 
     const request = form.submit(
       {
@@ -797,6 +829,17 @@ export async function getAccountDetails(): Promise<AccountResponse | AccountErro
     };
 
     debugLogRequest(url, 'GET', headers);
+    logCurlCommand(url, 'GET', headers);
+
+    // Return mock response in dry-run mode
+    if (isDryRunEnabled()) {
+      return {
+        credits: {
+          available: 100,
+          subscription: 1000
+        }
+      } as AccountResponse;
+    }
 
     const response = await fetch(url, {
       method: 'GET',

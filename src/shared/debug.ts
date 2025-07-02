@@ -1,4 +1,5 @@
 let debugEnabled = false;
+let dryRunEnabled = false;
 
 export function setDebugMode(enabled: boolean): void {
   debugEnabled = enabled;
@@ -6,6 +7,14 @@ export function setDebugMode(enabled: boolean): void {
 
 export function isDebugEnabled(): boolean {
   return debugEnabled;
+}
+
+export function setDryRunMode(enabled: boolean): void {
+  dryRunEnabled = enabled;
+}
+
+export function isDryRunEnabled(): boolean {
+  return dryRunEnabled;
 }
 
 export function debugLog(message: string, data?: unknown): void {
@@ -157,4 +166,75 @@ export function debugLogResponse(
       console.log(`   ${body}`);
     }
   }
+}
+
+export function logCurlCommand(
+  url: string,
+  method: string,
+  headers: Record<string, string>,
+  body?: unknown,
+  imagePath?: string
+): void {
+  if (!dryRunEnabled) return;
+
+  console.log('\n🔧 [DRY-RUN] Equivalent curl command:');
+  console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
+
+  let curlCommand = `curl -X ${method}`;
+
+  // Add headers (hide API key)
+  for (const [key, value] of Object.entries(headers)) {
+    if (key === 'x-api-key') {
+      curlCommand += ` \\\n  -H "${key}: YOUR-API-KEY"`;
+    } else {
+      curlCommand += ` \\\n  -H "${key}: ${value}"`;
+    }
+  }
+
+  // Handle form data
+  if (
+    body &&
+    typeof body === 'object' &&
+    'toString' in body &&
+    typeof body.toString === 'function'
+  ) {
+    // FormData case
+    if ('_streams' in body && Array.isArray(body._streams)) {
+      curlCommand += ' \\';
+      for (let i = 0; i < body._streams.length; i++) {
+        const stream = body._streams[i];
+        if (
+          typeof stream === 'string' &&
+          stream.includes('Content-Disposition: form-data; name=')
+        ) {
+          const match = stream.match(/name="([^"]+)"/);
+          if (match?.[1]) {
+            const fieldName = match[1];
+            if (fieldName === 'imageFile' || fieldName === 'image_file') {
+              const actualPath = imagePath || '/path/to/your/image.jpg';
+              curlCommand += `\n  -F "${fieldName}=@${actualPath}"`;
+            } else {
+              // Extract value from next stream if it's a string
+              const nextStream = body._streams[i + 1];
+              if (typeof nextStream === 'string' && !nextStream.includes('Content-Disposition')) {
+                const value = nextStream.trim();
+                if (value) {
+                  curlCommand += `\n  -F "${fieldName}=${value}"`;
+                }
+              }
+            }
+          }
+        }
+      }
+      curlCommand += ' \\';
+    }
+  } else if (body) {
+    // JSON or other body
+    curlCommand += ` \\\n  -d '${JSON.stringify(body)}'`;
+  }
+
+  curlCommand += ` \\\n  "${url}"`;
+
+  console.log(curlCommand);
+  console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
 }
