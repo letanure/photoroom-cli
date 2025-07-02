@@ -78,46 +78,7 @@ export async function askImageEditingParams(): Promise<ImageEditingParams> {
   const imageSourceResults = await askQuestions(imageSourceQuestions);
   Object.assign(responses, imageSourceResults);
 
-  // === TEMPLATE CONFIGURATION ===
-  const templateResult = (await enquirer.prompt({
-    type: 'input',
-    name: 'templateId',
-    message: 'Template ID (UUID, optional):',
-    validate: (value: string) => {
-      if (!value || value.trim() === '') return true;
-      const trimmed = value.trim();
-
-      // Basic UUID format validation
-      const uuidPattern = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
-      if (uuidPattern.test(trimmed)) return true;
-
-      return 'Must be a valid UUID format (e.g., 123e4567-e89b-12d3-a456-426614174000)';
-    }
-  })) as { templateId: string };
-  if (templateResult.templateId?.trim()) {
-    responses.templateId = templateResult.templateId.trim();
-  }
-
-  // === UPSCALING (ALPHA) ===
-  const upscaleResult = (await enquirer.prompt({
-    type: 'input',
-    name: 'upscaleMode',
-    message: 'Upscale mode (ai.fast/ai.slow, ALPHA feature, optional):',
-    validate: (value: string) => {
-      if (!value || value.trim() === '') return true;
-      const trimmed = value.trim();
-      const validValues = ['ai.fast', 'ai.slow'];
-      if (validValues.includes(trimmed)) return true;
-      return 'Must be "ai.fast" or "ai.slow"';
-    }
-  })) as { upscaleMode: string };
-  if (upscaleResult.upscaleMode?.trim()) {
-    responses.upscaleMode = upscaleResult.upscaleMode.trim();
-  }
-
-  // === BACKGROUND CONFIGURATION ===
-  console.log('\n🎨 Background Configuration');
-
+  // === BACKGROUND REMOVAL ===
   const removeBackgroundResult = (await enquirer.prompt({
     type: 'confirm',
     name: 'removeBackground',
@@ -134,6 +95,7 @@ export async function askImageEditingParams(): Promise<ImageEditingParams> {
   responses.configureBackground = backgroundResult.configureBackground;
 
   if (backgroundResult.configureBackground) {
+    console.log('\n🎨 Background Configuration');
     const background = await enquirer.prompt([
       {
         type: 'input',
@@ -338,371 +300,435 @@ export async function askImageEditingParams(): Promise<ImageEditingParams> {
   }
 
   // === LAYOUT & POSITIONING ===
-  console.log('\n📐 Layout & Positioning');
-  const layout = await enquirer.prompt([
-    {
-      type: 'input',
-      name: 'horizontalAlignment',
-      message: 'Horizontal alignment (left/center/right, advanced):',
-      validate: (value: string) => {
-        if (!value || value.trim() === '') return true;
-        const trimmed = value.trim().toLowerCase();
-        const validAlignments = ['left', 'center', 'right'];
-        if (validAlignments.includes(trimmed)) return true;
-        return 'Must be one of: left, center, right';
-      }
-    },
-    {
-      type: 'input',
-      name: 'verticalAlignment',
-      message: 'Vertical alignment (top/center/bottom, advanced):',
-      validate: (value: string) => {
-        if (!value || value.trim() === '') return true;
-        const trimmed = value.trim().toLowerCase();
-        const validAlignments = ['top', 'center', 'bottom'];
-        if (validAlignments.includes(trimmed)) return true;
-        return 'Must be one of: top, center, bottom';
-      }
-    },
-    {
-      type: 'input',
-      name: 'keepExistingAlphaChannel',
-      message: 'Keep existing alpha channel (auto/never):',
-      initial: 'never',
-      validate: (value: string) => {
-        if (!value || value.trim() === '') return true;
-        const trimmed = value.trim().toLowerCase();
-        const validValues = ['auto', 'never'];
-        if (validValues.includes(trimmed)) return true;
-        return 'Must be "auto" or "never"';
-      }
-    },
-    {
-      type: 'confirm',
-      name: 'ignorePaddingAndSnapOnCroppedSides',
-      message: 'Snap cropped subject sides to edges (ignores padding on cropped sides)?',
-      initial: true
-    },
-    {
-      type: 'input',
-      name: 'lightingMode',
-      message: 'Lighting mode (ai.auto for automatic adjustment):',
-      validate: (value: string) => {
-        if (!value || value.trim() === '') return true;
-        const trimmed = value.trim();
-        if (trimmed === 'ai.auto') return true;
-        return 'Must be "ai.auto" or leave empty';
-      }
-    },
-    {
-      type: 'input',
-      name: 'scaling',
-      message: 'Subject scaling (fit/fill - how subject fits in output):',
-      initial: 'fit',
-      validate: (value: string) => {
-        if (!value || value.trim() === '') return true;
-        const trimmed = value.trim().toLowerCase();
-        const validValues = ['fit', 'fill'];
-        if (validValues.includes(trimmed)) return true;
-        return 'Must be "fit" or "fill"';
-      }
-    },
-    {
-      type: 'input',
-      name: 'referenceBox',
-      message: 'Reference box (subjectBox/originalImage, advanced positioning):',
-      initial: 'subjectBox',
-      validate: (value: string) => {
-        if (!value || value.trim() === '') return true;
-        const trimmed = value.trim();
-        const validValues = ['subjectBox', 'originalImage'];
-        if (validValues.includes(trimmed)) return true;
-        return 'Must be "subjectBox" or "originalImage"';
-      }
-    },
-    {
-      type: 'input',
-      name: 'shadowMode',
-      message: 'Shadow mode (ai.soft/ai.hard/ai.floating, optional):',
-      validate: (value: string) => {
-        if (!value || value.trim() === '') return true;
-        const trimmed = value.trim();
-        const validValues = ['ai.soft', 'ai.hard', 'ai.floating'];
-        if (validValues.includes(trimmed)) return true;
-        return 'Must be "ai.soft", "ai.hard", or "ai.floating"';
-      }
-    },
-    {
-      type: 'input',
-      name: 'textRemovalMode',
-      message: 'Text removal mode (ai.artificial/ai.natural/ai.all, optional):',
-      validate: (value: string) => {
-        if (!value || value.trim() === '') return true;
-        const trimmed = value.trim();
-        const validValues = ['ai.artificial', 'ai.natural', 'ai.all'];
-        if (validValues.includes(trimmed)) return true;
-        return 'Must be "ai.artificial", "ai.natural", or "ai.all"';
-      }
-    }
-  ]);
-  responses.layout = layout;
-
-  // === SPACING & MARGINS ===
-  console.log('\n📏 Spacing & Margins');
-
-  // Margin configuration
-  const marginConfig = (await enquirer.prompt({
+  const layoutResult = (await enquirer.prompt({
     type: 'confirm',
-    name: 'setMargins',
-    message: 'Do you want to set margins?'
-  })) as { setMargins: boolean };
+    name: 'configureLayout',
+    message: 'Do you want to configure layout and positioning?'
+  })) as { configureLayout: boolean };
+  responses.configureLayout = layoutResult.configureLayout;
 
-  if (marginConfig.setMargins) {
-    const marginStyle = (await enquirer.prompt({
-      type: 'select',
-      name: 'marginStyle',
-      message: 'Margin configuration:',
-      choices: [
-        { name: 'uniform', message: 'Same margin for all sides' },
-        { name: 'individual', message: 'Individual margins for each side' }
-      ]
-    })) as { marginStyle: 'uniform' | 'individual' };
-
-    if (marginStyle.marginStyle === 'uniform') {
-      const uniformMargin = await enquirer.prompt({
-        type: 'input',
-        name: 'margin',
-        message: 'Margin for all sides (0-0.49, 0%-49%, or 100px):',
-        initial: '0',
-        validate: (value: string) => {
-          if (!value || value.trim() === '') return true;
-          const trimmed = value.trim();
-
-          // Check percentage format
-          if (trimmed.endsWith('%')) {
-            const num = Number.parseFloat(trimmed.slice(0, -1));
-            if (Number.isNaN(num) || num < 0 || num > 49)
-              return 'Percentage must be between 0% and 49%';
-            return true;
-          }
-
-          // Check pixel format
-          if (trimmed.endsWith('px')) {
-            const num = Number.parseFloat(trimmed.slice(0, -2));
-            if (Number.isNaN(num) || num < 0) return 'Pixel value must be positive';
-            return true;
-          }
-
-          // Check number format
-          const num = Number.parseFloat(trimmed);
-          if (Number.isNaN(num) || num < 0 || num > 0.49)
-            return 'Number must be between 0 and 0.49';
-
-          return true;
-        }
-      });
-      responses.margin = (uniformMargin as { margin: string }).margin;
-    } else {
-      const marginValidation = (value: string) => {
-        if (!value || value.trim() === '') return true;
-        const trimmed = value.trim();
-
-        // Check percentage format
-        if (trimmed.endsWith('%')) {
-          const num = Number.parseFloat(trimmed.slice(0, -1));
-          if (Number.isNaN(num) || num < 0 || num > 49)
-            return 'Percentage must be between 0% and 49%';
-          return true;
-        }
-
-        // Check pixel format
-        if (trimmed.endsWith('px')) {
-          const num = Number.parseFloat(trimmed.slice(0, -2));
-          if (Number.isNaN(num) || num < 0) return 'Pixel value must be positive';
-          return true;
-        }
-
-        // Check number format
-        const num = Number.parseFloat(trimmed);
-        if (Number.isNaN(num) || num < 0 || num > 0.49) return 'Number must be between 0 and 0.49';
-
-        return true;
-      };
-
-      const individualMargins = await enquirer.prompt([
-        {
-          type: 'input',
-          name: 'marginTop',
-          message: 'Top margin (0-0.49, 0%-49%, or 100px):',
-          validate: marginValidation
-        },
-        {
-          type: 'input',
-          name: 'marginRight',
-          message: 'Right margin (0-0.49, 0%-49%, or 100px):',
-          validate: marginValidation
-        },
-        {
-          type: 'input',
-          name: 'marginBottom',
-          message: 'Bottom margin (0-0.49, 0%-49%, or 100px):',
-          validate: marginValidation
-        },
-        {
-          type: 'input',
-          name: 'marginLeft',
-          message: 'Left margin (0-0.49, 0%-49%, or 100px):',
-          validate: marginValidation
-        }
-      ]);
-      responses.margins = individualMargins;
-    }
-  }
-
-  // Padding configuration
-  const paddingConfig = (await enquirer.prompt({
-    type: 'confirm',
-    name: 'setPadding',
-    message: 'Do you want to set padding?'
-  })) as { setPadding: boolean };
-
-  if (paddingConfig.setPadding) {
-    const paddingStyle = (await enquirer.prompt({
-      type: 'select',
-      name: 'paddingStyle',
-      message: 'Padding configuration:',
-      choices: [
-        { name: 'uniform', message: 'Same padding for all sides' },
-        { name: 'individual', message: 'Individual padding for each side' }
-      ]
-    })) as { paddingStyle: 'uniform' | 'individual' };
-
-    if (paddingStyle.paddingStyle === 'uniform') {
-      const uniformPadding = await enquirer.prompt({
-        type: 'input',
-        name: 'padding',
-        message: 'Padding for all sides (0-0.49, 0%-49%, or 100px):',
-        initial: '0',
-        validate: (value: string) => {
-          if (!value || value.trim() === '') return true;
-          const trimmed = value.trim();
-
-          // Check percentage format
-          if (trimmed.endsWith('%')) {
-            const num = Number.parseFloat(trimmed.slice(0, -1));
-            if (Number.isNaN(num) || num < 0 || num > 49)
-              return 'Percentage must be between 0% and 49%';
-            return true;
-          }
-
-          // Check pixel format
-          if (trimmed.endsWith('px')) {
-            const num = Number.parseFloat(trimmed.slice(0, -2));
-            if (Number.isNaN(num) || num < 0) return 'Pixel value must be positive';
-            return true;
-          }
-
-          // Check number format
-          const num = Number.parseFloat(trimmed);
-          if (Number.isNaN(num) || num < 0 || num > 0.49)
-            return 'Number must be between 0 and 0.49';
-
-          return true;
-        }
-      });
-      responses.padding = (uniformPadding as { padding: string }).padding;
-    } else {
-      const paddingValidation = (value: string) => {
-        if (!value || value.trim() === '') return true;
-        const trimmed = value.trim();
-
-        // Check percentage format
-        if (trimmed.endsWith('%')) {
-          const num = Number.parseFloat(trimmed.slice(0, -1));
-          if (Number.isNaN(num) || num < 0 || num > 49)
-            return 'Percentage must be between 0% and 49%';
-          return true;
-        }
-
-        // Check pixel format
-        if (trimmed.endsWith('px')) {
-          const num = Number.parseFloat(trimmed.slice(0, -2));
-          if (Number.isNaN(num) || num < 0) return 'Pixel value must be positive';
-          return true;
-        }
-
-        // Check number format
-        const num = Number.parseFloat(trimmed);
-        if (Number.isNaN(num) || num < 0 || num > 0.49) return 'Number must be between 0 and 0.49';
-
-        return true;
-      };
-
-      const individualPadding = await enquirer.prompt([
-        {
-          type: 'input',
-          name: 'paddingTop',
-          message: 'Top padding (0-0.49, 0%-49%, or 100px):',
-          validate: paddingValidation
-        },
-        {
-          type: 'input',
-          name: 'paddingRight',
-          message: 'Right padding (0-0.49, 0%-49%, or 100px):',
-          validate: paddingValidation
-        },
-        {
-          type: 'input',
-          name: 'paddingBottom',
-          message: 'Bottom padding (0-0.49, 0%-49%, or 100px):',
-          validate: paddingValidation
-        },
-        {
-          type: 'input',
-          name: 'paddingLeft',
-          message: 'Left padding (0-0.49, 0%-49%, or 100px):',
-          validate: paddingValidation
-        }
-      ]);
-      responses.padding = individualPadding;
-    }
-  }
-
-  // === ADVANCED OPTIONS ===
-  console.log('\n⚙️ Advanced Options');
-  const expandResult = (await enquirer.prompt({
-    type: 'confirm',
-    name: 'configureExpand',
-    message: 'Do you want to configure expand mode?'
-  })) as { configureExpand: boolean };
-  responses.configureExpand = expandResult.configureExpand;
-
-  if (expandResult.configureExpand) {
-    const expand = await enquirer.prompt([
+  if (layoutResult.configureLayout) {
+    console.log('\n📐 Layout & Positioning');
+    const layout = await enquirer.prompt([
       {
         type: 'select',
-        name: 'mode',
-        message: 'Expand mode (fills transparent pixels automatically):',
-        choices: ['ai.auto']
+        name: 'horizontalAlignment',
+        message: 'Horizontal alignment (advanced):',
+        choices: [
+          { name: 'left', message: 'Left' },
+          { name: 'center', message: 'Center' },
+          { name: 'right', message: 'Right' }
+        ]
+      },
+      {
+        type: 'select',
+        name: 'verticalAlignment',
+        message: 'Vertical alignment (advanced):',
+        choices: [
+          { name: 'top', message: 'Top' },
+          { name: 'center', message: 'Center' },
+          { name: 'bottom', message: 'Bottom' }
+        ]
       },
       {
         type: 'input',
-        name: 'seed',
-        message: 'Expand seed (integer for reproducible results, e.g. 123456):',
+        name: 'keepExistingAlphaChannel',
+        message: 'Keep existing alpha channel (auto/never):',
+        initial: 'never',
+        validate: (value: string) => {
+          if (!value || value.trim() === '') return true;
+          const trimmed = value.trim().toLowerCase();
+          const validValues = ['auto', 'never'];
+          if (validValues.includes(trimmed)) return true;
+          return 'Must be "auto" or "never"';
+        }
+      },
+      {
+        type: 'confirm',
+        name: 'ignorePaddingAndSnapOnCroppedSides',
+        message: 'Snap cropped subject sides to edges (ignores padding on cropped sides)?',
+        initial: true
+      },
+      {
+        type: 'input',
+        name: 'lightingMode',
+        message: 'Lighting mode (ai.auto for automatic adjustment):',
         validate: (value: string) => {
           if (!value || value.trim() === '') return true;
           const trimmed = value.trim();
-          const num = Number.parseInt(trimmed, 10);
-
-          if (Number.isNaN(num) || !Number.isInteger(num)) return 'Must be an integer';
-          if (num < 0) return 'Must be a positive integer';
-
-          return true;
+          if (trimmed === 'ai.auto') return true;
+          return 'Must be "ai.auto" or leave empty';
+        }
+      },
+      {
+        type: 'input',
+        name: 'scaling',
+        message: 'Subject scaling (fit/fill - how subject fits in output):',
+        initial: 'fit',
+        validate: (value: string) => {
+          if (!value || value.trim() === '') return true;
+          const trimmed = value.trim().toLowerCase();
+          const validValues = ['fit', 'fill'];
+          if (validValues.includes(trimmed)) return true;
+          return 'Must be "fit" or "fill"';
+        }
+      },
+      {
+        type: 'input',
+        name: 'referenceBox',
+        message: 'Reference box (subjectBox/originalImage, advanced positioning):',
+        initial: 'subjectBox',
+        validate: (value: string) => {
+          if (!value || value.trim() === '') return true;
+          const trimmed = value.trim();
+          const validValues = ['subjectBox', 'originalImage'];
+          if (validValues.includes(trimmed)) return true;
+          return 'Must be "subjectBox" or "originalImage"';
+        }
+      },
+      {
+        type: 'input',
+        name: 'shadowMode',
+        message: 'Shadow mode (ai.soft/ai.hard/ai.floating, optional):',
+        validate: (value: string) => {
+          if (!value || value.trim() === '') return true;
+          const trimmed = value.trim();
+          const validValues = ['ai.soft', 'ai.hard', 'ai.floating'];
+          if (validValues.includes(trimmed)) return true;
+          return 'Must be "ai.soft", "ai.hard", or "ai.floating"';
+        }
+      },
+      {
+        type: 'input',
+        name: 'textRemovalMode',
+        message: 'Text removal mode (ai.artificial/ai.natural/ai.all, optional):',
+        validate: (value: string) => {
+          if (!value || value.trim() === '') return true;
+          const trimmed = value.trim();
+          const validValues = ['ai.artificial', 'ai.natural', 'ai.all'];
+          if (validValues.includes(trimmed)) return true;
+          return 'Must be "ai.artificial", "ai.natural", or "ai.all"';
         }
       }
     ]);
-    responses.expand = expand;
+    responses.layout = layout;
   }
+
+  // === SPACING & MARGINS ===
+  const spacingResult = (await enquirer.prompt({
+    type: 'confirm',
+    name: 'configureSpacing',
+    message: 'Do you want to configure spacing and margins?'
+  })) as { configureSpacing: boolean };
+  responses.configureSpacing = spacingResult.configureSpacing;
+
+  if (spacingResult.configureSpacing) {
+    console.log('\n📏 Spacing & Margins');
+
+    // Margin configuration
+    const marginConfig = (await enquirer.prompt({
+      type: 'confirm',
+      name: 'setMargins',
+      message: 'Do you want to set margins?'
+    })) as { setMargins: boolean };
+
+    if (marginConfig.setMargins) {
+      const marginStyle = (await enquirer.prompt({
+        type: 'select',
+        name: 'marginStyle',
+        message: 'Margin configuration:',
+        choices: [
+          { name: 'uniform', message: 'Same margin for all sides' },
+          { name: 'individual', message: 'Individual margins for each side' }
+        ]
+      })) as { marginStyle: 'uniform' | 'individual' };
+
+      if (marginStyle.marginStyle === 'uniform') {
+        const uniformMargin = await enquirer.prompt({
+          type: 'input',
+          name: 'margin',
+          message: 'Margin for all sides (0-0.49, 0%-49%, or 100px):',
+          initial: '0',
+          validate: (value: string) => {
+            if (!value || value.trim() === '') return true;
+            const trimmed = value.trim();
+
+            // Check percentage format
+            if (trimmed.endsWith('%')) {
+              const num = Number.parseFloat(trimmed.slice(0, -1));
+              if (Number.isNaN(num) || num < 0 || num > 49)
+                return 'Percentage must be between 0% and 49%';
+              return true;
+            }
+
+            // Check pixel format
+            if (trimmed.endsWith('px')) {
+              const num = Number.parseFloat(trimmed.slice(0, -2));
+              if (Number.isNaN(num) || num < 0) return 'Pixel value must be positive';
+              return true;
+            }
+
+            // Check number format
+            const num = Number.parseFloat(trimmed);
+            if (Number.isNaN(num) || num < 0 || num > 0.49)
+              return 'Number must be between 0 and 0.49';
+
+            return true;
+          }
+        });
+        responses.margin = (uniformMargin as { margin: string }).margin;
+      } else {
+        const marginValidation = (value: string) => {
+          if (!value || value.trim() === '') return true;
+          const trimmed = value.trim();
+
+          // Check percentage format
+          if (trimmed.endsWith('%')) {
+            const num = Number.parseFloat(trimmed.slice(0, -1));
+            if (Number.isNaN(num) || num < 0 || num > 49)
+              return 'Percentage must be between 0% and 49%';
+            return true;
+          }
+
+          // Check pixel format
+          if (trimmed.endsWith('px')) {
+            const num = Number.parseFloat(trimmed.slice(0, -2));
+            if (Number.isNaN(num) || num < 0) return 'Pixel value must be positive';
+            return true;
+          }
+
+          // Check number format
+          const num = Number.parseFloat(trimmed);
+          if (Number.isNaN(num) || num < 0 || num > 0.49)
+            return 'Number must be between 0 and 0.49';
+
+          return true;
+        };
+
+        const individualMargins = await enquirer.prompt([
+          {
+            type: 'input',
+            name: 'marginTop',
+            message: 'Top margin (0-0.49, 0%-49%, or 100px):',
+            validate: marginValidation
+          },
+          {
+            type: 'input',
+            name: 'marginRight',
+            message: 'Right margin (0-0.49, 0%-49%, or 100px):',
+            validate: marginValidation
+          },
+          {
+            type: 'input',
+            name: 'marginBottom',
+            message: 'Bottom margin (0-0.49, 0%-49%, or 100px):',
+            validate: marginValidation
+          },
+          {
+            type: 'input',
+            name: 'marginLeft',
+            message: 'Left margin (0-0.49, 0%-49%, or 100px):',
+            validate: marginValidation
+          }
+        ]);
+        responses.margins = individualMargins;
+      }
+    }
+
+    // Padding configuration
+    const paddingConfig = (await enquirer.prompt({
+      type: 'confirm',
+      name: 'setPadding',
+      message: 'Do you want to set padding?'
+    })) as { setPadding: boolean };
+
+    if (paddingConfig.setPadding) {
+      const paddingStyle = (await enquirer.prompt({
+        type: 'select',
+        name: 'paddingStyle',
+        message: 'Padding configuration:',
+        choices: [
+          { name: 'uniform', message: 'Same padding for all sides' },
+          { name: 'individual', message: 'Individual padding for each side' }
+        ]
+      })) as { paddingStyle: 'uniform' | 'individual' };
+
+      if (paddingStyle.paddingStyle === 'uniform') {
+        const uniformPadding = await enquirer.prompt({
+          type: 'input',
+          name: 'padding',
+          message: 'Padding for all sides (0-0.49, 0%-49%, or 100px):',
+          initial: '0',
+          validate: (value: string) => {
+            if (!value || value.trim() === '') return true;
+            const trimmed = value.trim();
+
+            // Check percentage format
+            if (trimmed.endsWith('%')) {
+              const num = Number.parseFloat(trimmed.slice(0, -1));
+              if (Number.isNaN(num) || num < 0 || num > 49)
+                return 'Percentage must be between 0% and 49%';
+              return true;
+            }
+
+            // Check pixel format
+            if (trimmed.endsWith('px')) {
+              const num = Number.parseFloat(trimmed.slice(0, -2));
+              if (Number.isNaN(num) || num < 0) return 'Pixel value must be positive';
+              return true;
+            }
+
+            // Check number format
+            const num = Number.parseFloat(trimmed);
+            if (Number.isNaN(num) || num < 0 || num > 0.49)
+              return 'Number must be between 0 and 0.49';
+
+            return true;
+          }
+        });
+        responses.padding = (uniformPadding as { padding: string }).padding;
+      } else {
+        const paddingValidation = (value: string) => {
+          if (!value || value.trim() === '') return true;
+          const trimmed = value.trim();
+
+          // Check percentage format
+          if (trimmed.endsWith('%')) {
+            const num = Number.parseFloat(trimmed.slice(0, -1));
+            if (Number.isNaN(num) || num < 0 || num > 49)
+              return 'Percentage must be between 0% and 49%';
+            return true;
+          }
+
+          // Check pixel format
+          if (trimmed.endsWith('px')) {
+            const num = Number.parseFloat(trimmed.slice(0, -2));
+            if (Number.isNaN(num) || num < 0) return 'Pixel value must be positive';
+            return true;
+          }
+
+          // Check number format
+          const num = Number.parseFloat(trimmed);
+          if (Number.isNaN(num) || num < 0 || num > 0.49)
+            return 'Number must be between 0 and 0.49';
+
+          return true;
+        };
+
+        const individualPadding = await enquirer.prompt([
+          {
+            type: 'input',
+            name: 'paddingTop',
+            message: 'Top padding (0-0.49, 0%-49%, or 100px):',
+            validate: paddingValidation
+          },
+          {
+            type: 'input',
+            name: 'paddingRight',
+            message: 'Right padding (0-0.49, 0%-49%, or 100px):',
+            validate: paddingValidation
+          },
+          {
+            type: 'input',
+            name: 'paddingBottom',
+            message: 'Bottom padding (0-0.49, 0%-49%, or 100px):',
+            validate: paddingValidation
+          },
+          {
+            type: 'input',
+            name: 'paddingLeft',
+            message: 'Left padding (0-0.49, 0%-49%, or 100px):',
+            validate: paddingValidation
+          }
+        ]);
+        responses.padding = individualPadding;
+      }
+    }
+  } // Close spacing configuration
+
+  // === ADVANCED OPTIONS ===
+  const advancedResult = (await enquirer.prompt({
+    type: 'confirm',
+    name: 'configureAdvanced',
+    message: 'Do you want to configure advanced options?'
+  })) as { configureAdvanced: boolean };
+  responses.configureAdvanced = advancedResult.configureAdvanced;
+
+  if (advancedResult.configureAdvanced) {
+    console.log('\n⚙️ Advanced Options');
+
+    // Template ID (moved from top)
+    const templateResult = (await enquirer.prompt({
+      type: 'input',
+      name: 'templateId',
+      message: 'Template ID (UUID, optional):',
+      validate: (value: string) => {
+        if (!value || value.trim() === '') return true;
+        const trimmed = value.trim();
+
+        // Basic UUID format validation
+        const uuidPattern = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+        if (uuidPattern.test(trimmed)) return true;
+
+        return 'Must be a valid UUID format (e.g., 123e4567-e89b-12d3-a456-426614174000)';
+      }
+    })) as { templateId: string };
+    if (templateResult.templateId?.trim()) {
+      responses.templateId = templateResult.templateId.trim();
+    }
+
+    // Upscale mode (moved from top)
+    const upscaleResult = (await enquirer.prompt({
+      type: 'input',
+      name: 'upscaleMode',
+      message: 'Upscale mode (ai.fast/ai.slow, ALPHA feature, optional):',
+      validate: (value: string) => {
+        if (!value || value.trim() === '') return true;
+        const trimmed = value.trim();
+        const validValues = ['ai.fast', 'ai.slow'];
+        if (validValues.includes(trimmed)) return true;
+        return 'Must be "ai.fast" or "ai.slow"';
+      }
+    })) as { upscaleMode: string };
+    if (upscaleResult.upscaleMode?.trim()) {
+      responses.upscaleMode = upscaleResult.upscaleMode.trim();
+    }
+
+    // Expand configuration
+    const expandResult = (await enquirer.prompt({
+      type: 'confirm',
+      name: 'configureExpand',
+      message: 'Do you want to configure expand mode?'
+    })) as { configureExpand: boolean };
+    responses.configureExpand = expandResult.configureExpand;
+
+    if (expandResult.configureExpand) {
+      const expand = await enquirer.prompt([
+        {
+          type: 'select',
+          name: 'mode',
+          message: 'Expand mode (fills transparent pixels automatically):',
+          choices: ['ai.auto']
+        },
+        {
+          type: 'input',
+          name: 'seed',
+          message: 'Expand seed (integer for reproducible results, e.g. 123456):',
+          validate: (value: string) => {
+            if (!value || value.trim() === '') return true;
+            const trimmed = value.trim();
+            const num = Number.parseInt(trimmed, 10);
+
+            if (Number.isNaN(num) || !Number.isInteger(num)) return 'Must be an integer';
+            if (num < 0) return 'Must be a positive integer';
+
+            return true;
+          }
+        }
+      ]);
+      responses.expand = expand;
+    }
+  } // Close advanced configuration
 
   // === OUTPUT & EXPORT SETTINGS ===
   console.log('\n💾 Output & Export Settings');

@@ -2,6 +2,7 @@ import { createReadStream, promises as fs } from 'node:fs';
 import { basename, join, relative } from 'node:path';
 import FormData from 'form-data';
 import { getActiveApiKey } from './config-manager.js';
+import { debugLogRequest, debugLogResponse } from './debug.js';
 import { type ConflictState, handleFileConflict } from './file-conflict-handler.js';
 
 export interface RemoveBackgroundOptions {
@@ -178,15 +179,20 @@ async function processImage(
     if (options.channels) form.append('channels', options.channels);
     if (options.despill !== undefined) form.append('despill', options.despill.toString());
 
+    const url = 'https://sdk.photoroom.com/v1/segment';
+    const headers = {
+      Accept: 'image/png, application/json',
+      'x-api-key': apiKey
+    };
+
+    debugLogRequest(url, 'POST', headers, form);
+
     const request = form.submit(
       {
         protocol: 'https:',
         hostname: 'sdk.photoroom.com',
         path: '/v1/segment',
-        headers: {
-          Accept: 'image/png, application/json',
-          'x-api-key': apiKey
-        }
+        headers
       },
       (error, response) => {
         if (error) {
@@ -205,6 +211,9 @@ async function processImage(
 
         response.on('end', () => {
           const body = Buffer.concat(chunks);
+
+          // Debug log the response
+          debugLogResponse(response.statusCode || 0, response.headers, body);
 
           if (response.statusCode === 200) {
             // Get uncertainty score from headers
@@ -352,12 +361,17 @@ async function processImageEditingUrl(
     // Add all options as URL parameters
     addOptionsToParams(params, options);
 
-    const response = await fetch(`https://image-api.photoroom.com/v2/edit?${params.toString()}`, {
+    const url = `https://image-api.photoroom.com/v2/edit?${params.toString()}`;
+    const headers = {
+      Accept: 'image/png, application/json',
+      'x-api-key': apiKey
+    };
+
+    debugLogRequest(url, 'GET', headers);
+
+    const response = await fetch(url, {
       method: 'GET',
-      headers: {
-        Accept: 'image/png, application/json',
-        'x-api-key': apiKey
-      }
+      headers
     });
 
     return handleImageEditingResponse(response);
@@ -383,15 +397,20 @@ async function processImageEditingFile(
     // Add all options to form data
     addOptionsToFormData(form, options);
 
+    const url = 'https://image-api.photoroom.com/v2/edit';
+    const headers = {
+      Accept: 'image/png, application/json',
+      'x-api-key': apiKey
+    };
+
+    debugLogRequest(url, 'POST', headers, form);
+
     const request = form.submit(
       {
         protocol: 'https:',
         hostname: 'image-api.photoroom.com',
         path: '/v2/edit',
-        headers: {
-          Accept: 'image/png, application/json',
-          'x-api-key': apiKey
-        }
+        headers
       },
       async (error, response) => {
         if (error) {
@@ -419,9 +438,17 @@ async function processImageEditingFile(
 async function handleImageEditingResponse(
   response: Response
 ): Promise<ImageEditingSuccessResponse | ApiErrorResult> {
-  if (response.status === 200) {
-    const data = Buffer.from(await response.arrayBuffer());
+  const data = Buffer.from(await response.arrayBuffer());
 
+  // Convert Headers to plain object for debugging
+  const responseHeaders: Record<string, unknown> = {};
+  response.headers.forEach((value, key) => {
+    responseHeaders[key] = value;
+  });
+
+  debugLogResponse(response.status, responseHeaders, data);
+
+  if (response.status === 200) {
     return {
       success: true,
       data,
@@ -438,20 +465,39 @@ async function handleImageEditingResponse(
   }
 
   try {
-    const errorData = (await response.json()) as ApiErrorResponse;
-    const errorMessage = getErrorMessage(response.status, errorData);
+    const errorData = JSON.parse(data.toString());
 
+    // Handle different error response formats
+    if (errorData.error?.message) {
+      // PhotoRoom API format: {"error":{"message":"..."}}
+      return {
+        success: false,
+        error: errorData.error.message,
+        statusCode: response.status
+      };
+    }
+    if (errorData.detail) {
+      // Standard format: {detail: "...", status_code: number, type: string}
+      const standardError = errorData as ApiErrorResponse;
+      const errorMessage = getErrorMessage(response.status, standardError);
+      return {
+        success: false,
+        error: errorMessage,
+        detail: standardError.detail,
+        type: standardError.type,
+        statusCode: standardError.status_code
+      };
+    }
+    // Fallback to raw response
     return {
       success: false,
-      error: errorMessage,
-      detail: errorData.detail,
-      type: errorData.type,
-      statusCode: errorData.status_code
+      error: `HTTP ${response.status}: ${JSON.stringify(errorData)}`,
+      statusCode: response.status
     };
   } catch {
     return {
       success: false,
-      error: `HTTP ${response.status}: ${(await response.text()) || 'Unknown error'}`,
+      error: `HTTP ${response.status}: ${data.toString() || 'Unknown error'}`,
       statusCode: response.status
     };
   }
@@ -472,6 +518,9 @@ async function handleImageEditingResponseStream(
 
     response.on('end', () => {
       const body = Buffer.concat(chunks);
+
+      // Debug log the response
+      debugLogResponse(response.statusCode || 0, response.headers, body);
 
       if (response.statusCode === 200) {
         const uncertaintyScore = response.headers['x-uncertainty-score'];
@@ -495,15 +544,36 @@ async function handleImageEditingResponseStream(
         });
       } else {
         try {
-          const errorData = JSON.parse(body.toString()) as ApiErrorResponse;
-          const errorMessage = getErrorMessage(response.statusCode || 500, errorData);
+          const errorData = JSON.parse(body.toString());
 
+          // Handle different error response formats
+          if (errorData.error?.message) {
+            // PhotoRoom API format: {"error":{"message":"..."}}
+            resolve({
+              success: false,
+              error: errorData.error.message,
+              statusCode: response.statusCode
+            });
+            return;
+          }
+          if (errorData.detail) {
+            // Standard format: {detail: "...", status_code: number, type: string}
+            const standardError = errorData as ApiErrorResponse;
+            const errorMessage = getErrorMessage(response.statusCode || 500, standardError);
+            resolve({
+              success: false,
+              error: errorMessage,
+              detail: standardError.detail,
+              type: standardError.type,
+              statusCode: standardError.status_code
+            });
+            return;
+          }
+          // Fallback to raw response
           resolve({
             success: false,
-            error: errorMessage,
-            detail: errorData.detail,
-            type: errorData.type,
-            statusCode: errorData.status_code
+            error: `HTTP ${response.statusCode}: ${JSON.stringify(errorData)}`,
+            statusCode: response.statusCode
           });
         } catch {
           resolve({
@@ -524,6 +594,14 @@ async function handleImageEditingResponseStream(
   });
 }
 
+// Helper function to check if a value is meaningful (not empty, null, undefined, or 0)
+function hasValue(value: unknown): value is string | number {
+  if (value === null || value === undefined) return false;
+  if (typeof value === 'string') return value.trim() !== '';
+  if (typeof value === 'number') return value > 0;
+  return Boolean(value);
+}
+
 function addOptionsToParams(params: URLSearchParams, options: ImageEditingOptions): void {
   if (options.templateId) params.append('templateId', options.templateId);
   if (options.upscaleMode) params.append('upscale.mode', options.upscaleMode);
@@ -536,7 +614,7 @@ function addOptionsToParams(params: URLSearchParams, options: ImageEditingOption
     params.append('background.imageUrl', options.background.imageUrl);
   if (options.background?.guidanceImageUrl)
     params.append('background.guidance.imageUrl', options.background.guidanceImageUrl);
-  if (options.background?.guidanceScale !== undefined)
+  if (hasValue(options.background?.guidanceScale))
     params.append('background.guidance.scale', options.background.guidanceScale.toString());
   if (options.background?.prompt) params.append('background.prompt', options.background.prompt);
   if (options.background?.negativePrompt)
@@ -544,7 +622,7 @@ function addOptionsToParams(params: URLSearchParams, options: ImageEditingOption
   if (options.background?.expandPrompt)
     params.append('background.expandPrompt', options.background.expandPrompt);
   if (options.background?.scaling) params.append('background.scaling', options.background.scaling);
-  if (options.background?.seed !== undefined)
+  if (hasValue(options.background?.seed))
     params.append('background.seed', options.background.seed.toString());
 
   // Layout options
@@ -565,39 +643,36 @@ function addOptionsToParams(params: URLSearchParams, options: ImageEditingOption
   if (options.textRemovalMode) params.append('textRemoval.mode', options.textRemovalMode);
 
   // Spacing options
-  if (options.margin !== undefined) params.append('margin', options.margin.toString());
-  if (options.marginTop !== undefined) params.append('marginTop', options.marginTop.toString());
-  if (options.marginRight !== undefined)
-    params.append('marginRight', options.marginRight.toString());
-  if (options.marginBottom !== undefined)
+  if (hasValue(options.margin)) params.append('margin', options.margin.toString());
+  if (hasValue(options.marginTop)) params.append('marginTop', options.marginTop.toString());
+  if (hasValue(options.marginRight)) params.append('marginRight', options.marginRight.toString());
+  if (hasValue(options.marginBottom))
     params.append('marginBottom', options.marginBottom.toString());
-  if (options.marginLeft !== undefined) params.append('marginLeft', options.marginLeft.toString());
-  if (options.padding !== undefined) params.append('padding', options.padding.toString());
-  if (options.paddingTop !== undefined) params.append('paddingTop', options.paddingTop.toString());
-  if (options.paddingRight !== undefined)
+  if (hasValue(options.marginLeft)) params.append('marginLeft', options.marginLeft.toString());
+  if (hasValue(options.padding)) params.append('padding', options.padding.toString());
+  if (hasValue(options.paddingTop)) params.append('paddingTop', options.paddingTop.toString());
+  if (hasValue(options.paddingRight))
     params.append('paddingRight', options.paddingRight.toString());
-  if (options.paddingBottom !== undefined)
+  if (hasValue(options.paddingBottom))
     params.append('paddingBottom', options.paddingBottom.toString());
-  if (options.paddingLeft !== undefined)
-    params.append('paddingLeft', options.paddingLeft.toString());
+  if (hasValue(options.paddingLeft)) params.append('paddingLeft', options.paddingLeft.toString());
 
   // Expand options
   if (options.expand?.mode) params.append('expand.mode', options.expand.mode);
-  if (options.expand?.seed !== undefined)
-    params.append('expand.seed', options.expand.seed.toString());
+  if (hasValue(options.expand?.seed)) params.append('expand.seed', options.expand.seed.toString());
 
   // Export options
-  if (options.export?.dpi !== undefined) params.append('export.dpi', options.export.dpi.toString());
+  if (hasValue(options.export?.dpi)) params.append('export.dpi', options.export.dpi.toString());
   if (options.export?.format) params.append('export.format', options.export.format);
 
   // Output options
-  if (options.outputImageMimeType)
+  if (hasValue(options.outputImageMimeType))
     params.append('outputImageMimeType', options.outputImageMimeType);
-  if (options.maxWidth !== undefined) params.append('maxWidth', options.maxWidth.toString());
-  if (options.maxHeight !== undefined) params.append('maxHeight', options.maxHeight.toString());
-  if (options.outputSize) params.append('outputSize', options.outputSize);
-  if (options.sizeWidth !== undefined) params.append('sizeWidth', options.sizeWidth.toString());
-  if (options.sizeHeight !== undefined) params.append('sizeHeight', options.sizeHeight.toString());
+  if (hasValue(options.maxWidth)) params.append('maxWidth', options.maxWidth.toString());
+  if (hasValue(options.maxHeight)) params.append('maxHeight', options.maxHeight.toString());
+  if (hasValue(options.outputSize)) params.append('outputSize', options.outputSize);
+  if (hasValue(options.sizeWidth)) params.append('sizeWidth', options.sizeWidth.toString());
+  if (hasValue(options.sizeHeight)) params.append('sizeHeight', options.sizeHeight.toString());
 }
 
 function addOptionsToFormData(form: FormData, options: ImageEditingOptions): void {
@@ -613,7 +688,7 @@ function addOptionsToFormData(form: FormData, options: ImageEditingOptions): voi
     form.append('background.guidance.imageFile', createReadStream(options.background.imageFile));
   if (options.background?.guidanceImageUrl)
     form.append('background.guidance.imageUrl', options.background.guidanceImageUrl);
-  if (options.background?.guidanceScale !== undefined)
+  if (hasValue(options.background?.guidanceScale))
     form.append('background.guidance.scale', options.background.guidanceScale.toString());
   if (options.background?.prompt) form.append('background.prompt', options.background.prompt);
   if (options.background?.negativePrompt)
@@ -621,7 +696,7 @@ function addOptionsToFormData(form: FormData, options: ImageEditingOptions): voi
   if (options.background?.expandPrompt)
     form.append('background.expandPrompt', options.background.expandPrompt);
   if (options.background?.scaling) form.append('background.scaling', options.background.scaling);
-  if (options.background?.seed !== undefined)
+  if (hasValue(options.background?.seed))
     form.append('background.seed', options.background.seed.toString());
 
   // Layout options
@@ -641,36 +716,34 @@ function addOptionsToFormData(form: FormData, options: ImageEditingOptions): voi
   if (options.textRemovalMode) form.append('textRemoval.mode', options.textRemovalMode);
 
   // Spacing options
-  if (options.margin !== undefined) form.append('margin', options.margin.toString());
-  if (options.marginTop !== undefined) form.append('marginTop', options.marginTop.toString());
-  if (options.marginRight !== undefined) form.append('marginRight', options.marginRight.toString());
-  if (options.marginBottom !== undefined)
-    form.append('marginBottom', options.marginBottom.toString());
-  if (options.marginLeft !== undefined) form.append('marginLeft', options.marginLeft.toString());
-  if (options.padding !== undefined) form.append('padding', options.padding.toString());
-  if (options.paddingTop !== undefined) form.append('paddingTop', options.paddingTop.toString());
-  if (options.paddingRight !== undefined)
-    form.append('paddingRight', options.paddingRight.toString());
-  if (options.paddingBottom !== undefined)
+  if (hasValue(options.margin)) form.append('margin', options.margin.toString());
+  if (hasValue(options.marginTop)) form.append('marginTop', options.marginTop.toString());
+  if (hasValue(options.marginRight)) form.append('marginRight', options.marginRight.toString());
+  if (hasValue(options.marginBottom)) form.append('marginBottom', options.marginBottom.toString());
+  if (hasValue(options.marginLeft)) form.append('marginLeft', options.marginLeft.toString());
+  if (hasValue(options.padding)) form.append('padding', options.padding.toString());
+  if (hasValue(options.paddingTop)) form.append('paddingTop', options.paddingTop.toString());
+  if (hasValue(options.paddingRight)) form.append('paddingRight', options.paddingRight.toString());
+  if (hasValue(options.paddingBottom))
     form.append('paddingBottom', options.paddingBottom.toString());
-  if (options.paddingLeft !== undefined) form.append('paddingLeft', options.paddingLeft.toString());
+  if (hasValue(options.paddingLeft)) form.append('paddingLeft', options.paddingLeft.toString());
 
   // Expand options
   if (options.expand?.mode) form.append('expand.mode', options.expand.mode);
-  if (options.expand?.seed !== undefined)
-    form.append('expand.seed', options.expand.seed.toString());
+  if (hasValue(options.expand?.seed)) form.append('expand.seed', options.expand.seed.toString());
 
   // Export options
-  if (options.export?.dpi !== undefined) form.append('export.dpi', options.export.dpi.toString());
+  if (hasValue(options.export?.dpi)) form.append('export.dpi', options.export.dpi.toString());
   if (options.export?.format) form.append('export.format', options.export.format);
 
   // Output options
-  if (options.outputImageMimeType) form.append('outputImageMimeType', options.outputImageMimeType);
-  if (options.maxWidth !== undefined) form.append('maxWidth', options.maxWidth.toString());
-  if (options.maxHeight !== undefined) form.append('maxHeight', options.maxHeight.toString());
-  if (options.outputSize) form.append('outputSize', options.outputSize);
-  if (options.sizeWidth !== undefined) form.append('sizeWidth', options.sizeWidth.toString());
-  if (options.sizeHeight !== undefined) form.append('sizeHeight', options.sizeHeight.toString());
+  if (hasValue(options.outputImageMimeType))
+    form.append('outputImageMimeType', options.outputImageMimeType);
+  if (hasValue(options.maxWidth)) form.append('maxWidth', options.maxWidth.toString());
+  if (hasValue(options.maxHeight)) form.append('maxHeight', options.maxHeight.toString());
+  if (hasValue(options.outputSize)) form.append('outputSize', options.outputSize);
+  if (hasValue(options.sizeWidth)) form.append('sizeWidth', options.sizeWidth.toString());
+  if (hasValue(options.sizeHeight)) form.append('sizeHeight', options.sizeHeight.toString());
 }
 
 export async function saveProcessedImageEditing(
@@ -717,15 +790,28 @@ export async function getAccountDetails(): Promise<AccountResponse | AccountErro
   }
 
   try {
-    const response = await fetch('https://image-api.photoroom.com/v1/account', {
+    const url = 'https://image-api.photoroom.com/v1/account';
+    const headers = {
+      Accept: 'application/json',
+      'x-api-key': activeKey.data.key
+    };
+
+    debugLogRequest(url, 'GET', headers);
+
+    const response = await fetch(url, {
       method: 'GET',
-      headers: {
-        Accept: 'application/json',
-        'x-api-key': activeKey.data.key
-      }
+      headers
     });
 
     const data = await response.json();
+
+    // Convert Headers to plain object for debugging
+    const responseHeaders: Record<string, unknown> = {};
+    response.headers.forEach((value, key) => {
+      responseHeaders[key] = value;
+    });
+
+    debugLogResponse(response.status, responseHeaders, data);
 
     if (response.ok) {
       return data as AccountResponse;

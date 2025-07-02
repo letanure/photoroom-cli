@@ -9,6 +9,7 @@ export async function imageEditing() {
 
     // Extract image sources based on the selection
     let imagePaths: string[] = [];
+    // biome-ignore lint/suspicious/noExplicitAny: Required for flexible parameter interface
     const p = params as any;
     if (p.imageSource === 'file' && p.imageFiles) {
       imagePaths = p.imageFiles;
@@ -34,6 +35,7 @@ export async function imageEditing() {
 function transformToApiOptions(params: ImageEditingParams): ImageEditingOptions {
   const options: ImageEditingOptions = {};
   // Type assertion for easier access to properties
+  // biome-ignore lint/suspicious/noExplicitAny: Required for flexible parameter interface
   const p = params as any;
 
   // Set output directory

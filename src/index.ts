@@ -1,10 +1,13 @@
 #!/usr/bin/env node
 
+import yargs from 'yargs';
+import { hideBin } from 'yargs/helpers';
 import { accountDetails } from './account-details/index.js';
 import { imageEditing } from './image-editing/index.js';
 import { manageApiKeys } from './manage-api-keys/index.js';
 import { removeBackground } from './remove-background/index.js';
 import { getActiveApiKey } from './shared/config-manager.js';
+import { setDebugMode } from './shared/debug.js';
 import { askQuestions, type SelectQuestion } from './shared/question-handler.js';
 
 type MainMenuOptions = readonly [
@@ -51,6 +54,26 @@ function createMainMenuQuestions(hasActiveKey: boolean): SelectQuestion<MainMenu
 
 async function main() {
   try {
+    // Parse command line arguments
+    const argv = await yargs(hideBin(process.argv))
+      .option('debug', {
+        alias: 'd',
+        type: 'boolean',
+        description: 'Enable debug mode to log API requests and responses',
+        default: false
+      })
+      .help()
+      .alias('help', 'h')
+      .version()
+      .alias('version', 'v')
+      .parse();
+
+    // Enable debug mode if flag is set
+    if (argv.debug) {
+      setDebugMode(true);
+      console.log('🐛 Debug mode enabled');
+    }
+
     console.log('🎨 PhotoRoom CLI');
 
     while (true) {
