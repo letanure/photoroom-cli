@@ -1,6 +1,5 @@
-import { existsSync, readdirSync, statSync } from 'node:fs';
-import { basename, extname, join } from 'node:path';
 import enquirer from 'enquirer';
+import { selectImages } from '../../utils/image-selection.js';
 import {
   getQuestion,
   QUESTION_DEFINITIONS,
@@ -10,43 +9,6 @@ import type { ImageEditingConfig, QuestionConfig } from './types.js';
 import { DEFAULT_QUESTION_CONFIG } from './types.js';
 
 const { prompt } = enquirer;
-
-function formatFileSize(bytes: number): string {
-  if (bytes === 0) return '0 B';
-  const k = 1024;
-  const sizes = ['B', 'KB', 'MB', 'GB'];
-  const i = Math.floor(Math.log(bytes) / Math.log(k));
-  return `${(bytes / k ** i).toFixed(1)} ${sizes[i]}`;
-}
-
-function getFileType(filePath: string): string {
-  const ext = extname(filePath).toLowerCase();
-  const typeMap: Record<string, string> = {
-    '.jpg': 'JPEG',
-    '.jpeg': 'JPEG',
-    '.png': 'PNG',
-    '.webp': 'WebP',
-    '.bmp': 'BMP',
-    '.gif': 'GIF',
-    '.tiff': 'TIFF'
-  };
-  return typeMap[ext] || ext.substring(1).toUpperCase();
-}
-
-function formatImageChoice(filePath: string): string {
-  const filename = basename(filePath);
-  const fileType = getFileType(filePath);
-  const stats = statSync(filePath);
-  const fileSize = formatFileSize(stats.size);
-
-  const nameWidth = 25;
-  const typeWidth = 6;
-
-  const paddedName = filename.padEnd(nameWidth);
-  const paddedType = fileType.padEnd(typeWidth);
-
-  return `${paddedName} ${paddedType} ${fileSize}`;
-}
 
 interface EnquirerQuestion {
   type: string;
@@ -93,95 +55,11 @@ export async function askImageEditingQuestions(
 ): Promise<ImageEditingConfig> {
   const answers: Partial<ImageEditingConfig> = { ...config };
 
-  // Handle multiple image selection (same as before)
+  // Handle multiple image selection
   if (!answers.imageFile) {
-    const currentDir = process.cwd();
-    const imageExtensions = ['.jpg', '.jpeg', '.png', '.webp', '.bmp', '.gif', '.tiff'];
-    const imagesInCurrentDir = readdirSync(currentDir)
-      .filter((file) => imageExtensions.includes(extname(file).toLowerCase()))
-      .map((file) => join(currentDir, file));
-
-    const imageChoices = [];
-
-    if (imagesInCurrentDir.length > 0) {
-      imageChoices.push({
-        name: 'SELECT_ALL',
-        message: `✅ Select all ${imagesInCurrentDir.length} images`
-      });
-
-      imageChoices.push(
-        ...imagesInCurrentDir.map((filePath) => ({
-          name: filePath,
-          message: formatImageChoice(filePath)
-        }))
-      );
-    }
-
-    if (imageChoices.length === 0) {
-      const { firstImage } = (await prompt({
-        type: 'input',
-        name: 'firstImage',
-        message: 'Enter first image path:',
-        validate: (value: string) => {
-          if (value.length === 0) return 'First image path is required';
-          if (!existsSync(value)) return 'File does not exist';
-          return true;
-        }
-      })) as { firstImage: string };
-
-      const images = [firstImage];
-
-      while (true) {
-        const { nextImage } = (await prompt({
-          type: 'input',
-          name: 'nextImage',
-          message: `Enter next image path (or press Enter to finish - ${images.length} selected):`,
-          validate: (value: string) => {
-            if (value === '') return true;
-            if (!existsSync(value)) return 'File does not exist';
-            return true;
-          }
-        })) as { nextImage: string };
-
-        if (nextImage === '') break;
-        images.push(nextImage);
-      }
-
-      console.log(`\n📸 Selected ${images.length} image(s)`);
-      answers.imageFiles = images;
-      answers.imageFile = images[0];
-    } else {
-      const { selectedImages } = (await prompt({
-        type: 'multiselect' as const,
-        name: 'selectedImages',
-        message: `Select images to process (Found ${imagesInCurrentDir.length} images - Format: Filename Type Size):`,
-        choices: imageChoices,
-        initial: ['SELECT_ALL']
-      } as {
-        type: 'multiselect';
-        name: string;
-        message: string;
-        choices: Array<{ name: string; message: string }>;
-        initial: string[];
-      })) as { selectedImages: string[] };
-
-      let finalImages: string[];
-      if (selectedImages.includes('SELECT_ALL')) {
-        finalImages = imagesInCurrentDir;
-        console.log(`\n✅ Selected all ${finalImages.length} images from current directory`);
-      } else {
-        finalImages = selectedImages;
-        console.log(`\n📸 Selected ${finalImages.length} image(s)`);
-      }
-
-      if (finalImages.length === 0) {
-        console.log('\n❌ No images selected');
-        process.exit(1);
-      }
-
-      answers.imageFiles = finalImages;
-      answers.imageFile = finalImages[0];
-    }
+    const imageSelection = await selectImages();
+    answers.imageFile = imageSelection.imageFile;
+    answers.imageFiles = imageSelection.imageFiles;
   }
 
   // Always ask for output path if not provided
