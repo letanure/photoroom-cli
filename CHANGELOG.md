@@ -2,6 +2,27 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+## [1.3.0](https://github.com/letanure/photoroom-cli/compare/v1.2.0...v1.3.0) (2025-07-02)
+
+
+### Features
+
+* clean implementation, separate questions object ([6456c18](https://github.com/letanure/photoroom-cli/commit/6456c185f870300eba0b627c470f5a11102701af))
+* implement image editing ([ac39e82](https://github.com/letanure/photoroom-cli/commit/ac39e8289a9cb16bf4faf5fed412f8257f866d45))
+* refactor image selection ([1a4f5f5](https://github.com/letanure/photoroom-cli/commit/1a4f5f5feb68d9b6ad9214f9755a22c42ac5fc87))
+* reorganize questions ([1571f2d](https://github.com/letanure/photoroom-cli/commit/1571f2d6fd0d7a681118ab307b19839abf31ad8e))
+* update error handling ([f2cf1fe](https://github.com/letanure/photoroom-cli/commit/f2cf1feff7746289146426372882c79dd48ac6de))
+
+
+### Code Refactoring
+
+* update package.json scripts and dependencies ([e56217e](https://github.com/letanure/photoroom-cli/commit/e56217ef5305596582cccfb000d046914fb3cf4c))
+
+
+### Chores
+
+* merge ([aaf7fc2](https://github.com/letanure/photoroom-cli/commit/aaf7fc2908eb91fa40de8d9f1e86eb50f9c7c55c))
+
 ## [1.2.0](https://github.com/letanure/photoroom-cli/compare/v1.1.0...v1.2.0) (2025-07-01)
 
 
