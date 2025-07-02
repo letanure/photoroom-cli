@@ -1,11 +1,10 @@
-import { askQuestions } from '../shared/question-handler.js';
-import { imageEditingQuestions } from './questions.js';
+import { askImageEditingParams } from './questions.js';
 
 export async function imageEditing() {
   try {
     console.log('\n🎨 Image Editing');
 
-    const answers = await askQuestions(imageEditingQuestions);
+    const answers = await askImageEditingParams();
 
     console.log('\n📋 Answers received:');
     console.log(JSON.stringify(answers, null, 2));
