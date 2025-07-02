@@ -9,3 +9,10 @@ yarn-error.log
 .idea/
 *.log
 output/
+
+# Test coverage
+coverage/
+.nyc_output/
+
+# Vitest
+.vitest/
