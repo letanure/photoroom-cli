@@ -2,7 +2,7 @@ import enquirer from 'enquirer';
 import type { Question } from '../shared/question-handler.js';
 import { askQuestions } from '../shared/question-handler.js';
 
-interface ImageEditingParams {
+export interface ImageEditingParams {
   [key: string]: unknown;
 }
 
@@ -78,8 +78,54 @@ export async function askImageEditingParams(): Promise<ImageEditingParams> {
   const imageSourceResults = await askQuestions(imageSourceQuestions);
   Object.assign(responses, imageSourceResults);
 
+  // === TEMPLATE CONFIGURATION ===
+  const templateResult = (await enquirer.prompt({
+    type: 'input',
+    name: 'templateId',
+    message: 'Template ID (UUID, optional):',
+    validate: (value: string) => {
+      if (!value || value.trim() === '') return true;
+      const trimmed = value.trim();
+
+      // Basic UUID format validation
+      const uuidPattern = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+      if (uuidPattern.test(trimmed)) return true;
+
+      return 'Must be a valid UUID format (e.g., 123e4567-e89b-12d3-a456-426614174000)';
+    }
+  })) as { templateId: string };
+  if (templateResult.templateId?.trim()) {
+    responses.templateId = templateResult.templateId.trim();
+  }
+
+  // === UPSCALING (ALPHA) ===
+  const upscaleResult = (await enquirer.prompt({
+    type: 'input',
+    name: 'upscaleMode',
+    message: 'Upscale mode (ai.fast/ai.slow, ALPHA feature, optional):',
+    validate: (value: string) => {
+      if (!value || value.trim() === '') return true;
+      const trimmed = value.trim();
+      const validValues = ['ai.fast', 'ai.slow'];
+      if (validValues.includes(trimmed)) return true;
+      return 'Must be "ai.fast" or "ai.slow"';
+    }
+  })) as { upscaleMode: string };
+  if (upscaleResult.upscaleMode?.trim()) {
+    responses.upscaleMode = upscaleResult.upscaleMode.trim();
+  }
+
   // === BACKGROUND CONFIGURATION ===
   console.log('\n🎨 Background Configuration');
+
+  const removeBackgroundResult = (await enquirer.prompt({
+    type: 'confirm',
+    name: 'removeBackground',
+    message: "Remove background using PhotoRoom's algorithm?",
+    initial: true
+  })) as { removeBackground: boolean };
+  responses.removeBackground = removeBackgroundResult.removeBackground;
+
   const backgroundResult = (await enquirer.prompt({
     type: 'confirm',
     name: 'configureBackground',
@@ -92,22 +138,168 @@ export async function askImageEditingParams(): Promise<ImageEditingParams> {
       {
         type: 'input',
         name: 'color',
-        message: 'Background color (optional):'
+        message: 'Background color (hex: FF0000, #FF0000 or name: red, blue, transparent):',
+        initial: 'transparent',
+        validate: (value: string) => {
+          if (!value || value.trim() === '') return true;
+          const trimmed = value.trim();
+
+          // Check for transparent
+          if (trimmed.toLowerCase() === 'transparent') return true;
+
+          // Check hex format (with or without #)
+          const hexPattern = /^#?[A-Fa-f0-9]{6}([A-Fa-f0-9]{2})?$/;
+          if (hexPattern.test(trimmed)) return true;
+
+          // Check common color names
+          const colorNames = [
+            'red',
+            'green',
+            'blue',
+            'yellow',
+            'orange',
+            'purple',
+            'pink',
+            'black',
+            'white',
+            'gray',
+            'grey',
+            'brown',
+            'cyan',
+            'magenta',
+            'lime',
+            'navy',
+            'teal',
+            'silver',
+            'maroon',
+            'olive'
+          ];
+          if (colorNames.includes(trimmed.toLowerCase())) return true;
+
+          return 'Must be a hex color (FF0000, #FF0000) or color name (red, blue, etc.)';
+        }
       },
       {
         type: 'input',
         name: 'imageUrl',
-        message: 'Background image URL (optional):'
+        message: 'Background image URL (optional, max 30MB):',
+        validate: (value: string) => {
+          if (!value || value.trim() === '') return true;
+          const trimmed = value.trim();
+
+          try {
+            const url = new URL(trimmed);
+            const imageExtensions = [
+              '.jpg',
+              '.jpeg',
+              '.png',
+              '.gif',
+              '.bmp',
+              '.webp',
+              '.svg',
+              '.tiff',
+              '.tif'
+            ];
+            const pathname = url.pathname.toLowerCase();
+            const hasImageExtension = imageExtensions.some((ext) => pathname.endsWith(ext));
+
+            if (hasImageExtension) return true;
+            return 'URL must end with an image extension (.jpg, .png, .gif, .webp, etc.)';
+          } catch {
+            return 'Must be a valid URL (e.g., https://example.com/image.jpg)';
+          }
+        }
+      },
+      {
+        type: 'input',
+        name: 'imageFile',
+        message: 'Background guidance image file path (optional, max 30MB):',
+        validate: (value: string) => {
+          if (!value || value.trim() === '') return true;
+          const trimmed = value.trim();
+
+          // Check if file path looks valid
+          if (!trimmed.includes('.')) return 'Please provide a valid file path with extension';
+
+          // Check for common image extensions
+          const imageExtensions = [
+            '.jpg',
+            '.jpeg',
+            '.png',
+            '.gif',
+            '.bmp',
+            '.webp',
+            '.svg',
+            '.tiff',
+            '.tif'
+          ];
+          const hasImageExtension = imageExtensions.some((ext) =>
+            trimmed.toLowerCase().endsWith(ext)
+          );
+
+          if (!hasImageExtension) {
+            return 'File must be an image (.jpg, .png, .gif, .webp, etc.)';
+          }
+
+          return true;
+        }
+      },
+      {
+        type: 'input',
+        name: 'guidanceImageUrl',
+        message: 'Background guidance image URL (optional, max 30MB):',
+        validate: (value: string) => {
+          if (!value || value.trim() === '') return true;
+          const trimmed = value.trim();
+
+          try {
+            const url = new URL(trimmed);
+            const imageExtensions = [
+              '.jpg',
+              '.jpeg',
+              '.png',
+              '.gif',
+              '.bmp',
+              '.webp',
+              '.svg',
+              '.tiff',
+              '.tif'
+            ];
+            const pathname = url.pathname.toLowerCase();
+            const hasImageExtension = imageExtensions.some((ext) => pathname.endsWith(ext));
+
+            if (hasImageExtension) return true;
+            return 'URL must end with an image extension (.jpg, .png, .gif, .webp, etc.)';
+          } catch {
+            return 'Must be a valid URL (e.g., https://example.com/image.jpg)';
+          }
+        }
+      },
+      {
+        type: 'input',
+        name: 'guidanceScale',
+        message: 'Background guidance scale (0-1, how closely to match guiding image):',
+        initial: '0.6',
+        validate: (value: string) => {
+          if (!value || value.trim() === '') return true;
+          const trimmed = value.trim();
+          const num = Number.parseFloat(trimmed);
+
+          if (Number.isNaN(num)) return 'Must be a number';
+          if (num < 0 || num > 1) return 'Must be between 0 and 1';
+
+          return true;
+        }
       },
       {
         type: 'input',
         name: 'prompt',
-        message: 'Background prompt (optional):'
+        message: 'Background prompt (optional, e.g. "a blue sky with white clouds"):'
       },
       {
         type: 'input',
         name: 'negativePrompt',
-        message: 'Negative prompt (optional):'
+        message: 'Negative prompt (optional, LEGACY - only works with AI model v2):'
       },
       {
         type: 'input',
@@ -117,12 +309,29 @@ export async function askImageEditingParams(): Promise<ImageEditingParams> {
       {
         type: 'input',
         name: 'scaling',
-        message: 'Background scaling (number, optional):'
+        message: 'Background scaling (fit/fill, only for image backgrounds):',
+        initial: 'fill',
+        validate: (value: string) => {
+          if (!value || value.trim() === '') return true;
+          const trimmed = value.trim().toLowerCase();
+          if (trimmed === 'fit' || trimmed === 'fill') return true;
+          return 'Must be "fit" or "fill"';
+        }
       },
       {
         type: 'input',
         name: 'seed',
-        message: 'Background seed (integer, optional):'
+        message: 'Background seed (integer for reproducible results, e.g. 123456):',
+        validate: (value: string) => {
+          if (!value || value.trim() === '') return true;
+          const trimmed = value.trim();
+          const num = Number.parseInt(trimmed, 10);
+
+          if (Number.isNaN(num) || !Number.isInteger(num)) return 'Must be an integer';
+          if (num < 0) return 'Must be a positive integer';
+
+          return true;
+        }
       }
     ]);
     responses.background = background;
@@ -132,32 +341,108 @@ export async function askImageEditingParams(): Promise<ImageEditingParams> {
   console.log('\n📐 Layout & Positioning');
   const layout = await enquirer.prompt([
     {
-      type: 'select',
+      type: 'input',
       name: 'horizontalAlignment',
-      message: 'Horizontal alignment:',
-      choices: ['left', 'center', 'right']
+      message: 'Horizontal alignment (left/center/right, advanced):',
+      validate: (value: string) => {
+        if (!value || value.trim() === '') return true;
+        const trimmed = value.trim().toLowerCase();
+        const validAlignments = ['left', 'center', 'right'];
+        if (validAlignments.includes(trimmed)) return true;
+        return 'Must be one of: left, center, right';
+      }
     },
     {
-      type: 'select',
+      type: 'input',
       name: 'verticalAlignment',
-      message: 'Vertical alignment:',
-      choices: ['top', 'center', 'bottom']
+      message: 'Vertical alignment (top/center/bottom, advanced):',
+      validate: (value: string) => {
+        if (!value || value.trim() === '') return true;
+        const trimmed = value.trim().toLowerCase();
+        const validAlignments = ['top', 'center', 'bottom'];
+        if (validAlignments.includes(trimmed)) return true;
+        return 'Must be one of: top, center, bottom';
+      }
     },
     {
-      type: 'confirm',
+      type: 'input',
       name: 'keepExistingAlphaChannel',
-      message: 'Keep existing alpha channel?'
+      message: 'Keep existing alpha channel (auto/never):',
+      initial: 'never',
+      validate: (value: string) => {
+        if (!value || value.trim() === '') return true;
+        const trimmed = value.trim().toLowerCase();
+        const validValues = ['auto', 'never'];
+        if (validValues.includes(trimmed)) return true;
+        return 'Must be "auto" or "never"';
+      }
     },
     {
       type: 'confirm',
       name: 'ignorePaddingAndSnapOnCroppedSides',
-      message: 'Ignore padding and snap?'
+      message: 'Snap cropped subject sides to edges (ignores padding on cropped sides)?',
+      initial: true
     },
     {
-      type: 'select',
+      type: 'input',
       name: 'lightingMode',
-      message: 'Lighting mode:',
-      choices: ['original', 'enhanced']
+      message: 'Lighting mode (ai.auto for automatic adjustment):',
+      validate: (value: string) => {
+        if (!value || value.trim() === '') return true;
+        const trimmed = value.trim();
+        if (trimmed === 'ai.auto') return true;
+        return 'Must be "ai.auto" or leave empty';
+      }
+    },
+    {
+      type: 'input',
+      name: 'scaling',
+      message: 'Subject scaling (fit/fill - how subject fits in output):',
+      initial: 'fit',
+      validate: (value: string) => {
+        if (!value || value.trim() === '') return true;
+        const trimmed = value.trim().toLowerCase();
+        const validValues = ['fit', 'fill'];
+        if (validValues.includes(trimmed)) return true;
+        return 'Must be "fit" or "fill"';
+      }
+    },
+    {
+      type: 'input',
+      name: 'referenceBox',
+      message: 'Reference box (subjectBox/originalImage, advanced positioning):',
+      initial: 'subjectBox',
+      validate: (value: string) => {
+        if (!value || value.trim() === '') return true;
+        const trimmed = value.trim();
+        const validValues = ['subjectBox', 'originalImage'];
+        if (validValues.includes(trimmed)) return true;
+        return 'Must be "subjectBox" or "originalImage"';
+      }
+    },
+    {
+      type: 'input',
+      name: 'shadowMode',
+      message: 'Shadow mode (ai.soft/ai.hard/ai.floating, optional):',
+      validate: (value: string) => {
+        if (!value || value.trim() === '') return true;
+        const trimmed = value.trim();
+        const validValues = ['ai.soft', 'ai.hard', 'ai.floating'];
+        if (validValues.includes(trimmed)) return true;
+        return 'Must be "ai.soft", "ai.hard", or "ai.floating"';
+      }
+    },
+    {
+      type: 'input',
+      name: 'textRemovalMode',
+      message: 'Text removal mode (ai.artificial/ai.natural/ai.all, optional):',
+      validate: (value: string) => {
+        if (!value || value.trim() === '') return true;
+        const trimmed = value.trim();
+        const validValues = ['ai.artificial', 'ai.natural', 'ai.all'];
+        if (validValues.includes(trimmed)) return true;
+        return 'Must be "ai.artificial", "ai.natural", or "ai.all"';
+      }
     }
   ]);
   responses.layout = layout;
@@ -187,30 +472,87 @@ export async function askImageEditingParams(): Promise<ImageEditingParams> {
       const uniformMargin = await enquirer.prompt({
         type: 'input',
         name: 'margin',
-        message: 'Margin for all sides:'
+        message: 'Margin for all sides (0-0.49, 0%-49%, or 100px):',
+        initial: '0',
+        validate: (value: string) => {
+          if (!value || value.trim() === '') return true;
+          const trimmed = value.trim();
+
+          // Check percentage format
+          if (trimmed.endsWith('%')) {
+            const num = Number.parseFloat(trimmed.slice(0, -1));
+            if (Number.isNaN(num) || num < 0 || num > 49)
+              return 'Percentage must be between 0% and 49%';
+            return true;
+          }
+
+          // Check pixel format
+          if (trimmed.endsWith('px')) {
+            const num = Number.parseFloat(trimmed.slice(0, -2));
+            if (Number.isNaN(num) || num < 0) return 'Pixel value must be positive';
+            return true;
+          }
+
+          // Check number format
+          const num = Number.parseFloat(trimmed);
+          if (Number.isNaN(num) || num < 0 || num > 0.49)
+            return 'Number must be between 0 and 0.49';
+
+          return true;
+        }
       });
       responses.margin = (uniformMargin as { margin: string }).margin;
     } else {
+      const marginValidation = (value: string) => {
+        if (!value || value.trim() === '') return true;
+        const trimmed = value.trim();
+
+        // Check percentage format
+        if (trimmed.endsWith('%')) {
+          const num = Number.parseFloat(trimmed.slice(0, -1));
+          if (Number.isNaN(num) || num < 0 || num > 49)
+            return 'Percentage must be between 0% and 49%';
+          return true;
+        }
+
+        // Check pixel format
+        if (trimmed.endsWith('px')) {
+          const num = Number.parseFloat(trimmed.slice(0, -2));
+          if (Number.isNaN(num) || num < 0) return 'Pixel value must be positive';
+          return true;
+        }
+
+        // Check number format
+        const num = Number.parseFloat(trimmed);
+        if (Number.isNaN(num) || num < 0 || num > 0.49) return 'Number must be between 0 and 0.49';
+
+        return true;
+      };
+
       const individualMargins = await enquirer.prompt([
         {
           type: 'input',
           name: 'marginTop',
-          message: 'Top margin:'
+          message: 'Top margin (0-0.49, 0%-49%, or 100px):',
+          validate: marginValidation
         },
         {
           type: 'input',
           name: 'marginRight',
-          message: 'Right margin:'
+          message: 'Right margin (0-0.49, 0%-49%, or 100px):',
+          validate: marginValidation
         },
         {
           type: 'input',
           name: 'marginBottom',
-          message: 'Bottom margin:'
+          message: 'Bottom margin (0-0.49, 0%-49%, or 100px):',
+          validate: marginValidation
         },
         {
           type: 'input',
           name: 'marginLeft',
-          message: 'Left margin:'
+          message: 'Left margin (0-0.49, 0%-49%, or 100px):',
+          validate: marginValidation
         }
       ]);
       responses.margins = individualMargins;
@@ -239,30 +581,87 @@ export async function askImageEditingParams(): Promise<ImageEditingParams> {
       const uniformPadding = await enquirer.prompt({
         type: 'input',
         name: 'padding',
-        message: 'Padding for all sides:'
+        message: 'Padding for all sides (0-0.49, 0%-49%, or 100px):',
+        initial: '0',
+        validate: (value: string) => {
+          if (!value || value.trim() === '') return true;
+          const trimmed = value.trim();
+
+          // Check percentage format
+          if (trimmed.endsWith('%')) {
+            const num = Number.parseFloat(trimmed.slice(0, -1));
+            if (Number.isNaN(num) || num < 0 || num > 49)
+              return 'Percentage must be between 0% and 49%';
+            return true;
+          }
+
+          // Check pixel format
+          if (trimmed.endsWith('px')) {
+            const num = Number.parseFloat(trimmed.slice(0, -2));
+            if (Number.isNaN(num) || num < 0) return 'Pixel value must be positive';
+            return true;
+          }
+
+          // Check number format
+          const num = Number.parseFloat(trimmed);
+          if (Number.isNaN(num) || num < 0 || num > 0.49)
+            return 'Number must be between 0 and 0.49';
+
+          return true;
+        }
       });
       responses.padding = (uniformPadding as { padding: string }).padding;
     } else {
+      const paddingValidation = (value: string) => {
+        if (!value || value.trim() === '') return true;
+        const trimmed = value.trim();
+
+        // Check percentage format
+        if (trimmed.endsWith('%')) {
+          const num = Number.parseFloat(trimmed.slice(0, -1));
+          if (Number.isNaN(num) || num < 0 || num > 49)
+            return 'Percentage must be between 0% and 49%';
+          return true;
+        }
+
+        // Check pixel format
+        if (trimmed.endsWith('px')) {
+          const num = Number.parseFloat(trimmed.slice(0, -2));
+          if (Number.isNaN(num) || num < 0) return 'Pixel value must be positive';
+          return true;
+        }
+
+        // Check number format
+        const num = Number.parseFloat(trimmed);
+        if (Number.isNaN(num) || num < 0 || num > 0.49) return 'Number must be between 0 and 0.49';
+
+        return true;
+      };
+
       const individualPadding = await enquirer.prompt([
         {
           type: 'input',
           name: 'paddingTop',
-          message: 'Top padding:'
+          message: 'Top padding (0-0.49, 0%-49%, or 100px):',
+          validate: paddingValidation
         },
         {
           type: 'input',
           name: 'paddingRight',
-          message: 'Right padding:'
+          message: 'Right padding (0-0.49, 0%-49%, or 100px):',
+          validate: paddingValidation
         },
         {
           type: 'input',
           name: 'paddingBottom',
-          message: 'Bottom padding:'
+          message: 'Bottom padding (0-0.49, 0%-49%, or 100px):',
+          validate: paddingValidation
         },
         {
           type: 'input',
           name: 'paddingLeft',
-          message: 'Left padding:'
+          message: 'Left padding (0-0.49, 0%-49%, or 100px):',
+          validate: paddingValidation
         }
       ]);
       responses.padding = individualPadding;
@@ -283,13 +682,23 @@ export async function askImageEditingParams(): Promise<ImageEditingParams> {
       {
         type: 'select',
         name: 'mode',
-        message: 'Select expand mode:',
+        message: 'Expand mode (fills transparent pixels automatically):',
         choices: ['ai.auto']
       },
       {
         type: 'input',
         name: 'seed',
-        message: 'Expand seed (integer, optional):'
+        message: 'Expand seed (integer for reproducible results, e.g. 123456):',
+        validate: (value: string) => {
+          if (!value || value.trim() === '') return true;
+          const trimmed = value.trim();
+          const num = Number.parseInt(trimmed, 10);
+
+          if (Number.isNaN(num) || !Number.isInteger(num)) return 'Must be an integer';
+          if (num < 0) return 'Must be a positive integer';
+
+          return true;
+        }
       }
     ]);
     responses.expand = expand;
@@ -309,13 +718,30 @@ export async function askImageEditingParams(): Promise<ImageEditingParams> {
       {
         type: 'input',
         name: 'dpi',
-        message: 'DPI (optional):'
+        message: 'DPI (72-1200, e.g. 300 for print, 96 for web):',
+        validate: (value: string) => {
+          if (!value || value.trim() === '') return true;
+          const trimmed = value.trim();
+          const num = Number.parseInt(trimmed, 10);
+
+          if (Number.isNaN(num) || !Number.isInteger(num)) return 'Must be an integer';
+          if (num < 72 || num > 1200) return 'Must be between 72 and 1200 DPI';
+
+          return true;
+        }
       },
       {
-        type: 'select',
+        type: 'input',
         name: 'format',
-        message: 'Select export format:',
-        choices: ['png', 'jpeg']
+        message: 'Export format (png/jpeg/jpg/webp):',
+        initial: 'png',
+        validate: (value: string) => {
+          if (!value || value.trim() === '') return true;
+          const trimmed = value.trim().toLowerCase();
+          const validFormats = ['png', 'jpeg', 'jpg', 'webp'];
+          if (validFormats.includes(trimmed)) return true;
+          return 'Must be one of: png, jpeg, jpg, webp';
+        }
       }
     ]);
     responses.export = exportOptions;
@@ -330,22 +756,71 @@ export async function askImageEditingParams(): Promise<ImageEditingParams> {
     {
       type: 'input',
       name: 'maxWidth',
-      message: 'Max width (optional):'
+      message: 'Max width (resize while keeping aspect ratio, e.g. 200):',
+      validate: (value: string) => {
+        if (!value || value.trim() === '') return true;
+        const trimmed = value.trim();
+        const num = Number.parseInt(trimmed, 10);
+
+        if (Number.isNaN(num) || !Number.isInteger(num)) return 'Must be an integer';
+        if (num <= 0) return 'Must be a positive integer';
+
+        return true;
+      }
     },
     {
       type: 'input',
       name: 'maxHeight',
-      message: 'Max height (optional):'
+      message: 'Max height (resize while keeping aspect ratio, e.g. 200):',
+      validate: (value: string) => {
+        if (!value || value.trim() === '') return true;
+        const trimmed = value.trim();
+        const num = Number.parseInt(trimmed, 10);
+
+        if (Number.isNaN(num) || !Number.isInteger(num)) return 'Must be an integer';
+        if (num <= 0) return 'Must be a positive integer';
+
+        return true;
+      }
+    },
+    {
+      type: 'input',
+      name: 'outputSize',
+      message: 'Output size (auto/originalImage/croppedSubject/200x400):',
+      initial: 'auto',
+      validate: (value: string) => {
+        if (!value || value.trim() === '') return true;
+        const trimmed = value.trim();
+
+        // Check predefined values
+        const predefinedValues = ['auto', 'originalImage', 'croppedSubject'];
+        if (predefinedValues.includes(trimmed)) return true;
+
+        // Check widthxheight format
+        const dimensionPattern = /^\d+x\d+$/;
+        if (dimensionPattern.test(trimmed)) {
+          const parts = trimmed.split('x');
+          if (parts.length === 2) {
+            const width = Number(parts[0]);
+            const height = Number(parts[1]);
+            if (!Number.isNaN(width) && !Number.isNaN(height) && width > 0 && height > 0)
+              return true;
+          }
+          return 'Width and height must be positive numbers';
+        }
+
+        return 'Must be "auto", "originalImage", "croppedSubject", or "widthxheight" (e.g., 200x400)';
+      }
     },
     {
       type: 'input',
       name: 'sizeWidth',
-      message: 'Output size width (optional):'
+      message: 'Output size width (optional, alternative to outputSize):'
     },
     {
       type: 'input',
       name: 'sizeHeight',
-      message: 'Output size height (optional):'
+      message: 'Output size height (optional, alternative to outputSize):'
     }
   ]);
   responses.output = output;
