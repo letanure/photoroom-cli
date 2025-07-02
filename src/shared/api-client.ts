@@ -20,6 +20,21 @@ export interface ApiErrorResponse {
   type: string;
 }
 
+export interface AccountCredits {
+  available: number;
+  subscription: number;
+}
+
+export interface AccountResponse {
+  credits: AccountCredits;
+}
+
+export interface AccountErrorResponse {
+  error: {
+    message: string;
+  };
+}
+
 export interface ApiSuccessResponse {
   success: true;
   data: Buffer;
@@ -220,4 +235,31 @@ export async function saveProcessedImage(
 
   // Return relative path from current working directory
   return relative(process.cwd(), finalPath);
+}
+
+export async function getAccountDetails(): Promise<AccountResponse | AccountErrorResponse> {
+  const activeKey = await getActiveApiKey();
+
+  if (!activeKey) {
+    throw new Error('No active API key found. Please add and activate an API key first.');
+  }
+
+  try {
+    const response = await fetch('https://image-api.photoroom.com/v1/account', {
+      method: 'GET',
+      headers: {
+        Accept: 'application/json',
+        'x-api-key': activeKey.data.key
+      }
+    });
+
+    const data = await response.json();
+
+    if (response.ok) {
+      return data as AccountResponse;
+    }
+    return data as AccountErrorResponse;
+  } catch (error) {
+    throw new Error(`Network error: ${error instanceof Error ? error.message : 'Unknown error'}`);
+  }
 }
