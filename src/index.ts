@@ -4,7 +4,7 @@ import { Command } from 'commander';
 import { getApiKey } from './api-key-manager.js';
 import { handleAccount } from './apis/account/index.js';
 import { handleImageEditing } from './apis/image-editing/index.js';
-import { handleRemoveBackground } from './apis/remove-background/implementation.js';
+import { handleRemoveBackground } from './apis/remove-background/index.js';
 import { handleApiKeyManagement } from './commands/api-keys.js';
 import {
   handleConfigGet,

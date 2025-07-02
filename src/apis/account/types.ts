@@ -16,16 +16,3 @@ export interface UsageStatistics {
   imagesProcessed: number;
   creditsRemaining: number;
 }
-
-export interface AccountApiResponse {
-  success: boolean;
-  data?: {
-    account: AccountDetails;
-    usage: UsageStatistics;
-  };
-  error?: {
-    detail: string;
-    status_code: number;
-    type: string;
-  };
-}

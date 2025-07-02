@@ -25,6 +25,7 @@
     "check": "biome check ./src && tsc --noEmit",
     "check:fix": "biome check --write ./src",
     "typecheck": "tsc --noEmit",
+    "knip": "knip",
     "release": "npm run check && npm run build && standard-version",
     "release:minor": "npm run check && npm run build && standard-version --release-as minor",
     "release:major": "npm run check && npm run build && standard-version --release-as major",
@@ -53,6 +54,7 @@
     "conventional-changelog-cli": "^5.0.0",
     "enquirer": "^2.4.1",
     "husky": "^9.1.7",
+    "knip": "^5.61.3",
     "standard-version": "^9.5.0",
     "tsx": "^4.20.3",
     "typescript": "^5.8.3"

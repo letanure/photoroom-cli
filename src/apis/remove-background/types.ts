@@ -11,34 +11,8 @@ export interface RemoveBackgroundConfig {
   dryRun?: boolean;
 }
 
-export interface PhotoRoomApiResponse {
-  success: boolean;
-  data?: Buffer;
-  headers?: {
-    'x-uncertainty-score'?: string;
-  };
-  error?: RemoveBackgroundApiError;
-}
-
 export interface RemoveBackgroundApiError {
   detail: string;
   status_code: number;
   type: string;
-}
-
-export interface RemoveBackgroundSuccessResponse {
-  data: Buffer;
-  headers: {
-    'x-uncertainty-score'?: string;
-  };
-}
-
-export interface RemoveBackgroundErrorResponse {
-  error: RemoveBackgroundApiError;
-}
-
-export interface UncertaintyScore {
-  value: number;
-  confidence: 'very-confident' | 'confident' | 'uncertain' | 'very-uncertain' | 'human-detected';
-  description: string;
 }

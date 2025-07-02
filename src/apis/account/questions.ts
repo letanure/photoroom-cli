@@ -3,7 +3,7 @@ import type { AccountConfig } from './types.js';
 
 const { prompt } = enquirer;
 
-export async function askAccountQuestions(): Promise<AccountConfig> {
+async function _askAccountQuestions(): Promise<AccountConfig> {
   const questions = [
     {
       type: 'confirm',

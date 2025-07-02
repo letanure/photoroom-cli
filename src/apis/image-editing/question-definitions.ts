@@ -212,7 +212,7 @@ export const QUESTION_DEFINITIONS: QuestionDefinition[] = [
 ];
 
 // Helper function to get questions by group
-export function getQuestionsByGroup(group: QuestionDefinition['group']): QuestionDefinition[] {
+function _getQuestionsByGroup(group: QuestionDefinition['group']): QuestionDefinition[] {
   return QUESTION_DEFINITIONS.filter((q) => q.group === group);
 }
 
