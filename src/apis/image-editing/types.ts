@@ -101,27 +101,10 @@ export interface ImageEditingApiResponse {
 
 export interface QuestionConfig {
   core: string[];
-  advanced: {
-    background: string[];
-    layout: string[];
-    spacing: string[];
-    effects: string[];
-  };
+  advanced: string[];
 }
 
 export const DEFAULT_QUESTION_CONFIG: QuestionConfig = {
-  core: ['imageFile', 'outputPath', 'removeBackground'],
-  advanced: {
-    background: ['background.prompt', 'background.color', 'background.negativePrompt'],
-    layout: [
-      'outputSize',
-      'maxWidth',
-      'maxHeight',
-      'scaling',
-      'horizontalAlignment',
-      'verticalAlignment'
-    ],
-    spacing: ['margin', 'padding'],
-    effects: ['lighting.mode', 'shadow.mode', 'upscale.mode', 'textRemoval.mode']
-  }
+  core: ['removeBackground'],
+  advanced: ['outputSize', 'background.prompt', 'export.format']
 };

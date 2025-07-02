@@ -1,6 +1,11 @@
 import { existsSync, readdirSync, statSync } from 'node:fs';
 import { basename, extname, join } from 'node:path';
 import enquirer from 'enquirer';
+import {
+  getQuestion,
+  QUESTION_DEFINITIONS,
+  type QuestionDefinition
+} from './question-definitions.js';
 import type { ImageEditingConfig, QuestionConfig } from './types.js';
 import { DEFAULT_QUESTION_CONFIG } from './types.js';
 
@@ -43,13 +48,52 @@ function formatImageChoice(filePath: string): string {
   return `${paddedName} ${paddedType} ${fileSize}`;
 }
 
+interface EnquirerQuestion {
+  type: string;
+  name: string;
+  message: string;
+  initial?: string | number | boolean;
+  hint?: string;
+  validate?: (value: unknown) => boolean | string;
+  choices?: Array<{ name: string; message: string }>;
+}
+
+function convertToEnquirerQuestion(def: QuestionDefinition): EnquirerQuestion {
+  const question: EnquirerQuestion = {
+    type: def.type,
+    name: def.name,
+    message: def.label
+  };
+
+  if (def.defaultValue !== undefined) {
+    question.initial = def.defaultValue;
+  }
+
+  if (def.hint && def.type === 'input') {
+    question.hint = def.hint;
+  }
+
+  if (def.validate) {
+    question.validate = def.validate;
+  }
+
+  if (def.choices) {
+    question.choices = def.choices.map((choice) => ({
+      name: choice.value,
+      message: choice.label + (choice.hint ? ` - ${choice.hint}` : '')
+    }));
+  }
+
+  return question;
+}
+
 export async function askImageEditingQuestions(
   config: Partial<ImageEditingConfig> = {},
   questionConfig: QuestionConfig = DEFAULT_QUESTION_CONFIG
 ): Promise<ImageEditingConfig> {
   const answers: Partial<ImageEditingConfig> = { ...config };
 
-  // Handle multiple image selection (similar to background removal)
+  // Handle multiple image selection (same as before)
   if (!answers.imageFile) {
     const currentDir = process.cwd();
     const imageExtensions = ['.jpg', '.jpeg', '.png', '.webp', '.bmp', '.gif', '.tiff'];
@@ -140,26 +184,30 @@ export async function askImageEditingQuestions(
     }
   }
 
-  // Ask core questions
-  const coreQuestions = [];
-
-  if (questionConfig.core.includes('outputPath') && !answers.outputPath) {
-    coreQuestions.push({
-      type: 'input',
-      name: 'outputPath',
-      message: 'Output directory (where processed images will be saved):',
-      initial: './output',
-      validate: (value: string) => value.length > 0 || 'Output directory is required'
-    });
+  // Always ask for output path if not provided
+  if (!answers.outputPath) {
+    try {
+      const pathAnswer = await prompt({
+        type: 'input',
+        name: 'outputPath',
+        message: 'Output directory (where processed images will be saved):',
+        initial: './output',
+        validate: (value: string) => value.length > 0 || 'Output directory is required'
+      });
+      answers.outputPath = (pathAnswer as { outputPath: string }).outputPath;
+    } catch (_error) {
+      console.log('\n👋 Goodbye!');
+      process.exit(0);
+    }
   }
 
-  if (questionConfig.core.includes('removeBackground') && answers.removeBackground === undefined) {
-    coreQuestions.push({
-      type: 'confirm',
-      name: 'removeBackground',
-      message: 'Remove background from images?',
-      initial: true
-    });
+  // Ask core questions from config
+  const coreQuestions = [];
+  for (const questionName of questionConfig.core) {
+    const questionDef = getQuestion(questionName);
+    if (questionDef && answers[questionName as keyof ImageEditingConfig] === undefined) {
+      coreQuestions.push(convertToEnquirerQuestion(questionDef));
+    }
   }
 
   if (coreQuestions.length > 0) {
@@ -191,19 +239,49 @@ async function askAdvancedQuestions(
   answers: Partial<ImageEditingConfig>,
   questionConfig: QuestionConfig
 ): Promise<void> {
+  // Get all available groups from question definitions
+  const availableGroups = [...new Set(QUESTION_DEFINITIONS.map((q) => q.group))].filter(
+    (g) => g !== 'core'
+  );
+
+  const groupLabels: Record<string, string> = {
+    background: 'Background Options',
+    layout: 'Layout & Sizing',
+    spacing: 'Margins & Padding',
+    effects: 'Effects & Processing',
+    export: 'Export Settings',
+    specific: 'Specific options from config'
+  };
+
   const { category } = (await prompt({
     type: 'select',
     name: 'category',
     message: 'Select advanced options category:',
     choices: [
-      { name: 'background', message: 'Background Options' },
-      { name: 'layout', message: 'Layout & Sizing' },
-      { name: 'spacing', message: 'Margins & Padding' },
-      { name: 'effects', message: 'Effects & Processing' }
+      ...availableGroups.map((g) => ({ name: g, message: groupLabels[g] || g })),
+      { name: 'specific', message: groupLabels.specific }
     ]
-  })) as { category: keyof QuestionConfig['advanced'] };
+  })) as { category: string };
 
-  const questions = getQuestionsForCategory(category, questionConfig, answers);
+  const questions: EnquirerQuestion[] = [];
+
+  if (category === 'specific') {
+    // Ask specific questions from advanced config
+    for (const questionName of questionConfig.advanced) {
+      const questionDef = getQuestion(questionName);
+      if (questionDef && answers[questionName as keyof ImageEditingConfig] === undefined) {
+        questions.push(convertToEnquirerQuestion(questionDef));
+      }
+    }
+  } else {
+    // Get all questions from the selected category
+    const categoryQuestions = QUESTION_DEFINITIONS.filter((q) => q.group === category);
+    for (const questionDef of categoryQuestions) {
+      if (answers[questionDef.name as keyof ImageEditingConfig] === undefined) {
+        questions.push(convertToEnquirerQuestion(questionDef));
+      }
+    }
+  }
 
   if (questions.length > 0) {
     try {
@@ -213,6 +291,8 @@ async function askAdvancedQuestions(
       console.log('\n👋 Goodbye!');
       process.exit(0);
     }
+  } else {
+    console.log('All options in this category are already configured.');
   }
 
   const { continueAdvanced } = (await prompt({
@@ -225,110 +305,4 @@ async function askAdvancedQuestions(
   if (continueAdvanced) {
     await askAdvancedQuestions(answers, questionConfig);
   }
-}
-
-interface QuestionDefinition {
-  type: string;
-  name: string;
-  message: string;
-  choices?: Array<{ name: string; message: string }>;
-  initial?: string | number | boolean;
-  hint?: string;
-}
-
-function getQuestionsForCategory(
-  category: keyof QuestionConfig['advanced'],
-  questionConfig: QuestionConfig,
-  answers: Partial<ImageEditingConfig>
-): QuestionDefinition[] {
-  const questions = [];
-  const categoryQuestions = questionConfig.advanced[category];
-
-  for (const questionKey of categoryQuestions) {
-    switch (questionKey) {
-      case 'background.prompt':
-        if (!answers['background.prompt']) {
-          questions.push({
-            type: 'input',
-            name: 'background.prompt',
-            message: 'Background prompt (describe the background you want):',
-            hint: 'E.g., "modern office", "tropical beach", "solid white"'
-          });
-        }
-        break;
-      case 'background.color':
-        if (!answers['background.color']) {
-          questions.push({
-            type: 'input',
-            name: 'background.color',
-            message: 'Background color (hex code or color name):',
-            hint: 'E.g., "#FF0000", "red", "transparent"'
-          });
-        }
-        break;
-      case 'background.negativePrompt':
-        if (!answers['background.negativePrompt']) {
-          questions.push({
-            type: 'input',
-            name: 'background.negativePrompt',
-            message: 'Background negative prompt (what to avoid):',
-            hint: 'E.g., "blurry", "dark", "cluttered"'
-          });
-        }
-        break;
-      case 'outputSize':
-        if (!answers.outputSize) {
-          questions.push({
-            type: 'select',
-            name: 'outputSize',
-            message: 'Output size:',
-            choices: [
-              { name: 'original', message: 'Original size' },
-              { name: 'small', message: 'Small (512px)' },
-              { name: 'medium', message: 'Medium (1024px)' },
-              { name: 'large', message: 'Large (2048px)' }
-            ],
-            initial: 'original'
-          });
-        }
-        break;
-      case 'scaling':
-        if (!answers.scaling) {
-          questions.push({
-            type: 'select',
-            name: 'scaling',
-            message: 'Scaling mode:',
-            choices: [
-              { name: 'fit', message: 'Fit (maintain aspect ratio)' },
-              { name: 'fill', message: 'Fill (may crop)' },
-              { name: 'stretch', message: 'Stretch (may distort)' }
-            ],
-            initial: 'fit'
-          });
-        }
-        break;
-      case 'margin':
-        if (answers.margin === undefined) {
-          questions.push({
-            type: 'number',
-            name: 'margin',
-            message: 'Margin (pixels):',
-            initial: 0
-          });
-        }
-        break;
-      case 'padding':
-        if (answers.padding === undefined) {
-          questions.push({
-            type: 'number',
-            name: 'padding',
-            message: 'Padding (pixels):',
-            initial: 0
-          });
-        }
-        break;
-    }
-  }
-
-  return questions;
 }
