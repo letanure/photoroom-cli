@@ -3,7 +3,7 @@ import type { Question } from '../shared/question-handler.js';
 export const removeBackgroundQuestions: Question[] = [
   {
     type: 'select-images',
-    name: 'image_file',
+    name: 'image_files',
     label: 'Select image(s) to process',
     hint: 'Choose one or more images to remove background',
     required: true
@@ -23,34 +23,71 @@ export const removeBackgroundQuestions: Question[] = [
   },
   {
     type: 'select',
+    name: 'channels',
+    label: 'Output channels',
+    hint: 'The channels of the resulting image',
+    choices: [
+      { message: 'RGBA (color + transparency)', name: 'rgba', value: 'rgba' },
+      { message: 'Alpha (transparency only)', name: 'alpha', value: 'alpha' }
+    ],
+    default: 'rgba',
+    required: false
+  },
+  {
+    type: 'input',
+    name: 'bg_color',
+    label: 'Background color (optional)',
+    hint: 'Hex code (#FF00FF) or HTML color (red, green). Leave empty for transparent',
+    required: false,
+    validate: (value: string) => {
+      if (!value) return true; // Optional field
+
+      // Check hex pattern with #
+      const hexPattern = /^#[A-Fa-f0-9]{6}$/;
+
+      // Common HTML color names
+      const htmlColors = [
+        'red',
+        'green',
+        'blue',
+        'yellow',
+        'orange',
+        'purple',
+        'pink',
+        'black',
+        'white',
+        'gray',
+        'grey',
+        'brown',
+        'cyan',
+        'magenta',
+        'lime',
+        'navy',
+        'teal',
+        'silver',
+        'maroon',
+        'olive'
+      ];
+
+      if (!hexPattern.test(value) && !htmlColors.includes(value.toLowerCase())) {
+        return 'Background color must be a hex code (#FF00FF) or HTML color (red, green, etc.)';
+      }
+      return true;
+    }
+  },
+  {
+    type: 'select',
     name: 'size',
     label: 'Output size',
-    hint: 'Size of the processed image',
+    hint: 'Resolution of the processed image',
     choices: [
-      { message: 'HD (high definition)', name: 'hd', value: 'hd' },
-      { message: 'Original size', name: 'original', value: 'original' },
-      { message: 'Custom size...', name: 'custom', value: 'custom' }
+      { message: 'Preview (0.25 MP)', name: 'preview', value: 'preview' },
+      { message: 'Medium (1.5 MP)', name: 'medium', value: 'medium' },
+      { message: 'HD (4 MP)', name: 'hd', value: 'hd' },
+      { message: 'Full (36 MP)', name: 'full', value: 'full' }
     ],
-    default: 'original',
-    required: false,
-    subquestions: {
-      custom: [
-        {
-          type: 'input',
-          name: 'customSize',
-          label: 'Custom size (e.g. 1000x1000)',
-          hint: 'Format: WIDTHxHEIGHT',
-          required: true,
-          validate: (value: string) => {
-            const sizePattern = /^\d+x\d+$/;
-            if (!sizePattern.test(value)) {
-              return 'Size must be in format WIDTHxHEIGHT (e.g. 1000x1000)';
-            }
-            return true;
-          }
-        }
-      ]
-    }
+    default: 'full',
+    required: false
   },
   {
     type: 'confirm',
@@ -61,30 +98,11 @@ export const removeBackgroundQuestions: Question[] = [
     required: false
   },
   {
-    type: 'input',
-    name: 'bg_color',
-    label: 'Background color (optional)',
-    hint: 'Hex color code (e.g. FFFFFF for white). Leave empty for transparent',
-    required: false,
-    validate: (value: string) => {
-      if (!value) return true; // Optional field
-      const hexPattern = /^[A-Fa-f0-9]{6}$/;
-      if (!hexPattern.test(value)) {
-        return 'Background color must be a 6-digit hex code (e.g. FFFFFF)';
-      }
-      return true;
-    }
-  },
-  {
-    type: 'select',
-    name: 'channels',
-    label: 'Output channels',
-    hint: 'Alpha for transparency or RGB for opaque',
-    choices: [
-      { message: 'Alpha (transparent)', name: 'alpha', value: 'alpha' },
-      { message: 'RGB (opaque)', name: 'rgb', value: 'rgb' }
-    ],
-    default: 'alpha',
+    type: 'confirm',
+    name: 'despill',
+    label: 'Remove color spill?',
+    hint: 'Automatically removes colored reflections left by green backgrounds',
+    default: false,
     required: false
   }
 ] as const;
