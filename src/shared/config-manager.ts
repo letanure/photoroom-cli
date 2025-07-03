@@ -168,6 +168,21 @@ export async function deleteApiKey(id: string): Promise<boolean> {
 }
 
 export async function getActiveApiKey(): Promise<{ id: string; data: ApiKeyData } | null> {
+  // Check for environment variable first
+  const envKey = process.env.PHOTOROOM_API_KEY;
+  if (envKey) {
+    return {
+      id: 'env',
+      data: {
+        name: 'Environment Variable',
+        type: envKey.startsWith('sandbox_') ? 'sandbox' : 'live',
+        key: envKey,
+        active: true,
+        createdAt: new Date().toISOString()
+      }
+    };
+  }
+
   const config = await loadConfig();
 
   if (!config.activeKey || !config.apiKeys[config.activeKey]) {

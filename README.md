@@ -57,16 +57,34 @@ Select "Manage API keys" → "Add new API key" and follow the prompts.
 ### 3. Start Using
 
 Once configured, you can:
+
 - Remove backgrounds from images
 - Edit images with advanced options
 - Check your account details and credits
 
 ## 💻 Usage
 
-### Basic Usage
+### Command Line Usage (NEW!)
 
 ```bash
-# Start the interactive CLI
+# Check account details and credits
+photoroom-cli account
+
+# Use with environment variable (no stored key needed)
+PHOTOROOM_API_KEY=your_api_key photoroom-cli account
+
+# With debug mode
+photoroom-cli account --debug
+
+# Coming soon:
+# photoroom-cli remove image.jpg --output result.png
+# photoroom-cli edit image.jpg --background "#ffffff"
+```
+
+### Interactive Mode
+
+```bash
+# Start the interactive CLI (default when no command given)
 photoroom-cli
 
 # Show help
@@ -82,14 +100,24 @@ photoroom-cli --dry-run
 photoroom-cli --debug --dry-run
 ```
 
+### Environment Variables
+
+```bash
+# Set API key via environment (takes precedence over stored keys)
+export PHOTOROOM_API_KEY=your_api_key_here
+
+# Use in scripts or CI/CD
+PHOTOROOM_API_KEY=your_api_key photoroom-cli account
+```
+
 ### Command Line Options
 
-| Option | Alias | Description |
-|--------|-------|-------------|
-| `--debug` | `-d` | Enable debug mode to log API requests and responses |
-| `--dry-run` | | Show what requests would be made without executing them |
-| `--help` | `-h` | Show help information |
-| `--version` | `-v` | Show version number |
+| Option      | Alias | Description                                             |
+| ----------- | ----- | ------------------------------------------------------- |
+| `--debug`   | `-d`  | Enable debug mode to log API requests and responses     |
+| `--dry-run` |       | Show what requests would be made without executing them |
+| `--help`    | `-h`  | Show help information                                   |
+| `--version` | `-v`  | Show version number                                     |
 
 ## 🖼️ Image Operations
 
@@ -113,6 +141,7 @@ photoroom-cli --debug --dry-run
 3. Configure advanced options:
 
 #### Background Options
+
 - Remove background with PhotoRoom's algorithm
 - Set solid colors, gradients, or custom images
 - Background prompts for AI generation
@@ -120,6 +149,7 @@ photoroom-cli --debug --dry-run
 - Seed values for reproducible results
 
 #### Layout & Positioning
+
 - Horizontal/vertical alignment
 - Subject scaling (fit/fill)
 - Alpha channel handling
@@ -128,12 +158,14 @@ photoroom-cli --debug --dry-run
 - Text removal modes
 
 #### Spacing & Margins
+
 - Uniform or individual margins
 - Uniform or individual padding
 - Pixel, percentage, or ratio values
 - Advanced positioning controls
 
 #### Export Settings
+
 - DPI settings (72-1200)
 - Format selection (PNG/JPEG/WebP)
 - MIME type specifications
@@ -150,6 +182,7 @@ photoroom-cli --debug
 ```
 
 Debug mode shows:
+
 - Complete API request details (with hidden API keys)
 - Response headers and status codes
 - Request/response timing
@@ -165,6 +198,7 @@ photoroom-cli --dry-run
 ```
 
 Dry run mode provides:
+
 - Equivalent curl commands for each API call
 - Mock successful responses
 - File path predictions
@@ -212,6 +246,7 @@ curl -X POST \
 ### File Conflict Resolution
 
 The CLI automatically handles file conflicts with options to:
+
 - Overwrite existing files
 - Rename with incremental numbers
 - Apply choice to all files in batch
@@ -220,6 +255,7 @@ The CLI automatically handles file conflicts with options to:
 ### Batch Processing
 
 Process multiple images efficiently:
+
 - Select multiple files in the file picker
 - Consistent settings applied to all images
 - Progress tracking with success/error reporting
@@ -287,6 +323,7 @@ src/
 ## 📊 API Usage & Credits
 
 This CLI consumes PhotoRoom API credits based on your usage:
+
 - Each background removal operation uses credits
 - Each image editing operation uses credits
 - Account details checking is free
@@ -324,18 +361,23 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 ## ❓ FAQ
 
 ### Q: Is this an official PhotoRoom tool?
+
 A: No, this is an independent project created by Luiz Tanure and is not affiliated with PhotoRoom.
 
 ### Q: Do I need a PhotoRoom account?
+
 A: Yes, you need PhotoRoom API keys which require a PhotoRoom account.
 
 ### Q: Can I use this commercially?
+
 A: This CLI tool is MIT licensed, but you must comply with PhotoRoom's API terms of service for commercial usage.
 
 ### Q: How do I report bugs?
+
 A: Please open an issue on the [GitHub repository](https://github.com/letanure/photoroom-cli/issues).
 
 ### Q: Can I request new features?
+
 A: Yes! Feature requests are welcome through GitHub issues.
 
 ---
