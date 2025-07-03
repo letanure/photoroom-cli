@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+## [1.5.0](https://github.com/letanure/photoroom-cli/compare/v1.4.7...v1.5.0) (2025-07-03)
+
+
+### Features
+
+* add CLI  account details command and ENV key ([8f093a2](https://github.com/letanure/photoroom-cli/commit/8f093a289d84bb24e1290c613b067ea16bc68acb))
+
 ### [1.4.7](https://github.com/letanure/photoroom-cli/compare/v1.4.6...v1.4.7) (2025-07-03)
 
 
