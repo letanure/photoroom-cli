@@ -1,6 +1,6 @@
 {
   "name": "photoroom-cli",
-  "version": "1.4.4",
+  "version": "1.4.5",
   "description": "Unofficial CLI tool for PhotoRoom API - AI-powered background removal and image editing",
   "main": "dist/index.js",
   "bin": {

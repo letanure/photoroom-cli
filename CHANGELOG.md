@@ -2,6 +2,18 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+### [1.4.5](https://github.com/letanure/photoroom-cli/compare/v1.4.4...v1.4.5) (2025-07-03)
+
+
+### Documentation
+
+* docs to docs =) ([0772410](https://github.com/letanure/photoroom-cli/commit/07724107c841cfe241574852bed4d9cabb51d67f))
+
+
+### Chores
+
+* update .npmignore ([43c81ce](https://github.com/letanure/photoroom-cli/commit/43c81ce0d3fcfc3e16d7609b812279d1278a5e68))
+
 ### [1.4.4](https://github.com/letanure/photoroom-cli/compare/v1.4.3...v1.4.4) (2025-07-03)
 
 
