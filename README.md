@@ -2,6 +2,47 @@
 
 An unofficial command-line interface for the PhotoRoom API that provides powerful image editing and background removal capabilities through an interactive terminal interface.
 
+## 🚀 Quick Start (TLDR)
+
+### Try it instantly with npx (no installation required):
+
+```bash
+# Run the interactive CLI
+npx photoroom-cli
+
+# Check account details (requires API key)
+PHOTOROOM_API_KEY=your_api_key npx photoroom-cli account
+
+# Run with debug mode
+npx photoroom-cli --debug
+```
+
+### Or install globally:
+
+```bash
+# Install once
+npm install -g photoroom-cli
+
+# Then use anywhere
+photoroom-cli
+```
+
+### What you can do:
+
+- **Remove backgrounds** from images using AI
+- **Edit images** with advanced options (backgrounds, layouts, effects)
+- **Check account** details and API credits
+- **Manage API keys** securely
+- **Process multiple images** in batches
+
+### Need API keys?
+
+1. Sign up at [PhotoRoom](https://photoroom.com/)
+2. Get your API keys from the developer dashboard
+3. Run `photoroom-cli` and select "Manage API keys" to add them
+
+---
+
 > **⚠️ Disclaimer**: This project is not affiliated with or endorsed by PhotoRoom. It is an independent CLI tool created by Luiz Tanure for personal and educational purposes. All PhotoRoom API functionality, trademarks, and services belong to PhotoRoom.
 
 ## 🚀 Features
@@ -32,6 +73,31 @@ cd photoroom-cli
 npm install
 npm run build
 npm link
+```
+
+### Using npx (No Installation Required)
+
+You can run PhotoRoom CLI directly without installing it globally using npx:
+
+```bash
+npx photoroom-cli
+```
+
+This is useful for:
+- One-time usage
+- Testing the CLI before installing
+- Running on systems where you don't want to install globally
+- Always using the latest version
+
+```bash
+# Run with command line arguments
+npx photoroom-cli account
+
+# Run with environment variable
+PHOTOROOM_API_KEY=your_api_key npx photoroom-cli account
+
+# Run with flags
+npx photoroom-cli --debug --dry-run
 ```
 
 ## 🔑 Getting Started
