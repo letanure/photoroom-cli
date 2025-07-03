@@ -70,14 +70,8 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
-      - name: Check formatting
-        run: npx biome check ./src --formatter-enabled=true --linter-enabled=false --organize-imports-enabled=false
-
-      - name: Run linting
-        run: npx biome lint ./src
-
-      - name: Type checking
-        run: npm run typecheck
+      - name: Check code quality
+        run: npm run check
 
       - name: Check for unused dependencies
         run: npm run knip
