@@ -30,8 +30,7 @@ output/
 scripts/
 
 # Documentation that's not needed in package
-RELEASE.md
-RELEASES.md
+docs/
 
 # Environment files
 .env
