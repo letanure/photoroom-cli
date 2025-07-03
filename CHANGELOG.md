@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+## [1.7.0](https://github.com/letanure/photoroom-cli/compare/v1.6.0...v1.7.0) (2025-07-03)
+
+
+### Features
+
+* add demo GIF to README ([ce75a24](https://github.com/letanure/photoroom-cli/commit/ce75a244c9acd5b6facf08abcd67cba1ff9194c1))
+
 ## [1.6.0](https://github.com/letanure/photoroom-cli/compare/v1.5.2...v1.6.0) (2025-07-03)
 
 
