@@ -2,6 +2,8 @@
 
 An unofficial command-line interface for the PhotoRoom API that provides powerful image editing and background removal capabilities through an interactive terminal interface.
 
+![PhotoRoom CLI Demo](docs/demo.gif)
+
 ## 🚀 Quick Start (TLDR)
 
 ### Try it instantly with npx (no installation required):
