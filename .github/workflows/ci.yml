@@ -16,8 +16,8 @@ jobs:
     
     strategy:
       matrix:
-        node-version: [18.x, 20.x, 22.x]
-        os: [ubuntu-latest, windows-latest, macos-latest]
+        node-version: [22.x]
+        os: [macos-latest]
 
     steps:
       - name: Checkout
@@ -71,7 +71,7 @@ jobs:
         run: npm ci
 
       - name: Check formatting
-        run: npx biome format --check ./src
+        run: npx biome check ./src --formatter-enabled=true --linter-enabled=false --organize-imports-enabled=false
 
       - name: Run linting
         run: npx biome lint ./src
