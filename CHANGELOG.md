@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+### [1.4.6](https://github.com/letanure/photoroom-cli/compare/v1.4.5...v1.4.6) (2025-07-03)
+
+
+### Tests
+
+* remove old tests ([8646543](https://github.com/letanure/photoroom-cli/commit/86465432a7d6610cc1e3e30db175bc4a3e03ef38))
+
 ### [1.4.5](https://github.com/letanure/photoroom-cli/compare/v1.4.4...v1.4.5) (2025-07-03)
 
 
