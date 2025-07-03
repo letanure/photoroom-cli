@@ -8,4 +8,11 @@ yarn-error.log
 .vscode/
 .idea/
 *.log
-output.png
+output/
+
+# Test coverage
+coverage/
+.nyc_output/
+
+# Vitest
+.vitest/

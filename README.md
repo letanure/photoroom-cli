@@ -1,260 +1,345 @@
 # PhotoRoom CLI
 
-A command-line interface for the PhotoRoom API, built with Node.js and TypeScript.
+An unofficial command-line interface for the PhotoRoom API that provides powerful image editing and background removal capabilities through an interactive terminal interface.
 
-## Features
+> **⚠️ Disclaimer**: This project is not affiliated with or endorsed by PhotoRoom. It is an independent CLI tool created by Luiz Tanure for personal and educational purposes. All PhotoRoom API functionality, trademarks, and services belong to PhotoRoom.
 
-- **Remove Background (Basic Plan)** - Remove backgrounds from images with advanced options
-- **Account Details** - View your PhotoRoom account information *(coming soon)*
-- **Image Editing v2 (Plus Plan)** - Advanced image editing features *(coming soon)*
+## 🚀 Features
 
-## Installation
+- **Remove Background**: Remove backgrounds from images using PhotoRoom's AI-powered background removal API
+- **Image Editing**: Advanced image editing with background replacement, layout positioning, spacing controls, and export options
+- **Account Management**: Check your PhotoRoom API credits and account details
+- **API Key Management**: Securely store and manage multiple PhotoRoom API keys (sandbox/live)
+- **Interactive Interface**: User-friendly prompts and questionnaires for all operations
+- **Debug Mode**: Detailed API request/response logging for troubleshooting
+- **Dry Run Mode**: Preview API calls without making actual requests or using credits
+- **Batch Processing**: Process multiple images in a single operation
+- **File Conflict Handling**: Smart handling of existing files with rename/overwrite options
+
+## 📦 Installation
+
+### From npm (Recommended)
 
 ```bash
-# Clone the repository
-git clone <repository-url>
+npm install -g photoroom-cli
+```
+
+### From Source
+
+```bash
+git clone https://github.com/letanure/photoroom-cli.git
 cd photoroom-cli
-
-# Install dependencies
 npm install
-
-# Build the project
 npm run build
+npm link
 ```
 
-## Configuration
+## 🔑 Getting Started
 
-### API Key Setup
+### 1. Get PhotoRoom API Keys
 
-The CLI will automatically prompt for your API key on first run. You can also set it using:
+You'll need PhotoRoom API keys to use this CLI:
 
-**Option 1: Save to config (recommended)**
-```bash
-photoroom-cli config set api-key your-api-key-here
-```
+1. Sign up at [PhotoRoom](https://photoroom.com/)
+2. Get your API keys from the PhotoRoom developer dashboard
+3. You can use both sandbox keys (for testing) and live keys (for production)
 
-**Option 2: Environment variable**
-```bash
-export PHOTOROOM_API_KEY="your-api-key-here"
-```
+### 2. Configure API Keys
 
-**Option 3: Command line flag**
-```bash
-photoroom-cli remove-bg --api-key your-api-key-here --input photo.jpg
-```
-
-### Configuration Management
+Run the CLI and set up your API keys:
 
 ```bash
-# View all configuration
-photoroom-cli config get
-
-# Set default values
-photoroom-cli config set default-format png
-photoroom-cli config set default-size hd
-photoroom-cli config set default-output ./output
-
-# Get specific config
-photoroom-cli config get api-key
-photoroom-cli config get default-format
-
-# Reset all configuration
-photoroom-cli config reset
-
-# Show config file location
-photoroom-cli config path
+photoroom-cli
 ```
 
-**Config file locations:**
-- **macOS/Linux**: `~/.config/photoroom-cli/config.json`
-- **Windows**: `%APPDATA%/photoroom-cli/config.json`
+Select "Manage API keys" → "Add new API key" and follow the prompts.
 
-## Development
+### 3. Start Using
+
+Once configured, you can:
+- Remove backgrounds from images
+- Edit images with advanced options
+- Check your account details and credits
+
+## 💻 Usage
+
+### Basic Usage
+
+```bash
+# Start the interactive CLI
+photoroom-cli
+
+# Show help
+photoroom-cli --help
+
+# Enable debug mode
+photoroom-cli --debug
+
+# Dry run mode (preview without making requests)
+photoroom-cli --dry-run
+
+# Combine flags
+photoroom-cli --debug --dry-run
+```
+
+### Command Line Options
+
+| Option | Alias | Description |
+|--------|-------|-------------|
+| `--debug` | `-d` | Enable debug mode to log API requests and responses |
+| `--dry-run` | | Show what requests would be made without executing them |
+| `--help` | `-h` | Show help information |
+| `--version` | `-v` | Show version number |
+
+## 🖼️ Image Operations
+
+### Remove Background
+
+1. Select "Remove Background" from the main menu
+2. Choose images (file picker or URL input)
+3. Configure options:
+   - Output format (PNG, JPG, WebP)
+   - Image size and cropping
+   - Background color
+   - Channels (RGBA/Alpha)
+   - Despill options
+4. Set output directory
+5. Process images
+
+### Image Editing (Advanced)
+
+1. Select "Image Editing" from the main menu
+2. Choose images (file picker or URL input)
+3. Configure advanced options:
+
+#### Background Options
+- Remove background with PhotoRoom's algorithm
+- Set solid colors, gradients, or custom images
+- Background prompts for AI generation
+- Guidance images and scaling controls
+- Seed values for reproducible results
+
+#### Layout & Positioning
+- Horizontal/vertical alignment
+- Subject scaling (fit/fill)
+- Alpha channel handling
+- Lighting mode adjustments
+- Shadow modes (soft/hard/floating)
+- Text removal modes
+
+#### Spacing & Margins
+- Uniform or individual margins
+- Uniform or individual padding
+- Pixel, percentage, or ratio values
+- Advanced positioning controls
+
+#### Export Settings
+- DPI settings (72-1200)
+- Format selection (PNG/JPEG/WebP)
+- MIME type specifications
+- Size constraints and scaling
+
+## 🔧 Debug & Development
+
+### Debug Mode
+
+Enable detailed logging of all API interactions:
+
+```bash
+photoroom-cli --debug
+```
+
+Debug mode shows:
+- Complete API request details (with hidden API keys)
+- Response headers and status codes
+- Request/response timing
+- Form data field inspection
+- Pretty-printed JSON responses
+
+### Dry Run Mode
+
+Preview operations without making actual API calls:
+
+```bash
+photoroom-cli --dry-run
+```
+
+Dry run mode provides:
+- Equivalent curl commands for each API call
+- Mock successful responses
+- File path predictions
+- Credit-free testing of parameters
+- API request validation
+
+### Example Debug Output
+
+```bash
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+🐛 [DEBUG] API REQUEST
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+📋 Method: POST
+🌐 URL: https://image-api.photoroom.com/v2/edit
+📄 Headers:
+   Accept: image/png, application/json
+   x-api-key: YOUR-API-KEY
+📦 Body: [FORM DATA]
+   Content-Type: multipart/form-data; boundary=...
+   Fields: imageFile: [IMAGE FILE], removeBackground, outputSize
+```
+
+### Example Curl Command
+
+```bash
+🔧 [DRY-RUN] Equivalent curl command:
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+curl -X POST \
+  -H "Accept: image/png, application/json" \
+  -H "x-api-key: YOUR-API-KEY" \
+  -F "imageFile=@/path/to/your/actual/image.jpg" \
+  -F "removeBackground=true" \
+  -F "outputSize=auto" \
+  "https://image-api.photoroom.com/v2/edit"
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+```
+
+## 📁 File Management
+
+### Supported Formats
+
+**Input**: JPG, JPEG, PNG, GIF, BMP, WebP, SVG, TIFF
+**Output**: PNG, JPG, WebP
+
+### File Conflict Resolution
+
+The CLI automatically handles file conflicts with options to:
+- Overwrite existing files
+- Rename with incremental numbers
+- Apply choice to all files in batch
+- Cancel operation
+
+### Batch Processing
+
+Process multiple images efficiently:
+- Select multiple files in the file picker
+- Consistent settings applied to all images
+- Progress tracking with success/error reporting
+- Confidence scores for each result
+
+## 🔐 Security
+
+- API keys are stored securely in local configuration
+- Keys are never logged in debug output (shown as "YOUR-API-KEY")
+- No data is sent to third parties (only PhotoRoom API)
+- All network requests use HTTPS
+
+## 🛠️ Development
+
+### Prerequisites
+
+- Node.js 18+ and npm
+- TypeScript knowledge for contributions
+- PhotoRoom API access
+
+### Setup
+
+```bash
+git clone https://github.com/letanure/photoroom-cli.git
+cd photoroom-cli
+npm install
+```
+
+### Development Commands
 
 ```bash
 # Run in development mode
 npm run dev
 
-# Build TypeScript
+# Build for production
 npm run build
 
-# Run built version
-npm start
+# Run tests
+npm test
+
+# Lint code
+npm run lint
+
+# Type checking
+npm run typecheck
 ```
 
-## Usage
-
-### Interactive Mode
-
-Run the CLI without arguments to see the action menu:
-
-```bash
-npm run dev
-# or
-node dist/index.js
-```
-
-### Remove Background
-
-#### Interactive Mode
-```bash
-npm run dev -- remove-bg
-```
-
-#### Command Line Flags
-```bash
-npm run dev -- remove-bg \
-  --input ./photo.jpg \
-  --output ./photo-no-bg.png \
-  --format png \
-  --size hd \
-  --crop \
-  --despill
-```
-
-#### Dry Run Mode
-Test your configuration without making actual API calls:
-
-```bash
-# Global dry run (interactive mode)
-npm run dev -- --dry-run
-
-# Specific command dry run
-npm run dev -- remove-bg --input ./photo.jpg --dry-run
-npm run dev -- account --dry-run
-npm run dev -- image-editing --dry-run
-```
-
-This will display the complete API request details including URL, headers, and form data without executing the request.
-
-### Available Options
-
-| Option | Flag | Description | Values | Default |
-|--------|------|-------------|---------|---------|
-| Input Image | `-i, --input` | Path to input image | File path | *Required* |
-| Output Path | `-o, --output` | Path for output image | File path | `./output.png` |
-| Format | `-f, --format` | Output image format | `png`, `jpg`, `webp` | `png` |
-| Channels | `-c, --channels` | Output channels | `rgba`, `alpha` | `rgba` |
-| Background Color | `-b, --bg-color` | Background color | Hex (`#FF00FF`) or HTML color | *None* |
-| Size | `-s, --size` | Output image size | `preview`, `medium`, `hd`, `full` | `full` |
-| Crop | `--crop` | Crop to cutout border | Boolean flag | `false` |
-| Despill | `--despill` | Remove green background reflections | Boolean flag | `false` |
-| Dry Run | `--dry-run` | Log API request without executing | Boolean flag | `false` |
-| API Key | `--api-key` | PhotoRoom API key | String | From config/env |
-
-### Size Options
-
-- **preview** - 0.25 Megapixels (fast processing)
-- **medium** - 1.5 Megapixels 
-- **hd** - 4 Megapixels
-- **full** - 36 Megapixels (highest quality, slower processing)
-
-## API Response
-
-The PhotoRoom API returns:
-
-- **Image Data**: The processed image as binary data
-- **Uncertainty Score**: A confidence score between 0-1
-  - `0` = Very confident about the cutout accuracy
-  - `1` = Model is unsure about segmentation
-  - `-1` = Human detected in image (no uncertainty score)
-
-### Uncertainty Score Interpretation
-
-- **0.0 - 0.2**: Very confident
-- **0.2 - 0.5**: Confident  
-- **0.5 - 0.8**: Uncertain
-- **0.8 - 1.0**: Very uncertain
-- **-1**: Human detected (different processing)
-
-## Development Setup
-
-### Prerequisites
-
-- Node.js 18+
-- npm or yarn
-
-### Scripts
-
-- `npm run dev` - Run in development mode with tsx
-- `npm run build` - Compile TypeScript to JavaScript
-- `npm start` - Run the compiled JavaScript
-- `npm test` - Run tests *(coming soon)*
-
-### Code Quality
-
-This project uses:
-
-- **TypeScript** with strict configuration
-- **Commitlint** for conventional commit messages
-- **Husky** for git hooks
-- **ESM modules** for modern JavaScript
-
-### Commit Messages
-
-Follow conventional commit format:
+### Project Structure
 
 ```
-feat: add new background removal options
-fix: resolve image validation error
-docs: update API documentation
-chore: setup development environment
+src/
+├── account-details/     # Account information features
+├── image-editing/       # Advanced image editing
+├── manage-api-keys/     # API key management
+├── remove-background/   # Background removal
+├── shared/             # Shared utilities
+│   ├── api-client.ts   # PhotoRoom API interface
+│   ├── debug.ts        # Debug and dry-run utilities
+│   ├── file-conflict-handler.ts
+│   ├── image-processor.ts
+│   └── question-handler.ts
+└── index.ts            # Main CLI entry point
 ```
 
-## API Documentation
+## 📊 API Usage & Credits
 
-### Remove Background Endpoint
+This CLI consumes PhotoRoom API credits based on your usage:
+- Each background removal operation uses credits
+- Each image editing operation uses credits
+- Account details checking is free
+- Dry run mode uses no credits
 
-**Endpoint**: `POST /v1/segment`  
-**Content-Type**: `multipart/form-data`
+Monitor your usage through the "Account details" option in the main menu.
 
-**Parameters**:
-- `image_file` (required) - The image file to process
-- `format` (optional) - Output format: `png`, `jpg`, `webp`
-- `channels` (optional) - Output channels: `rgba`, `alpha`
-- `bg_color` (optional) - Background color (hex or HTML color)
-- `size` (optional) - Output size: `preview`, `medium`, `hd`, `full`
-- `crop` (optional) - Crop to cutout border: `true`, `false`
-- `despill` (optional) - Remove green background reflections: `true`, `false`
+## 🤝 Contributing
 
-**Response**:
-- **200 OK**: Returns processed image binary data
-- **Headers**: `x-uncertainty-score` - Confidence score (0-1 or -1)
-- **400 Bad Request**: Returns error details in JSON format
-- **403 Forbidden**: Authentication or permission errors
-
-### Error Response Format
-
-```json
-{
-  "detail": "Please provide an image.",
-  "status_code": 400,
-  "type": "missing_image"
-}
-```
-
-**Common Error Types**:
-
-**400 Bad Request**:
-- `missing_image` - No image file provided
-- `invalid_format` - Unsupported image format
-- `file_too_large` - Image file exceeds size limit
-- `invalid_parameter` - Invalid parameter value
-
-**403 Forbidden**:
-- `forbidden` - Access denied
-- `invalid_api_key` - API key is invalid or expired
-- `insufficient_permissions` - API key lacks required permissions
-- `plan_limit_exceeded` - Usage limit for current plan exceeded
-
-## Contributing
+Contributions are welcome! Please:
 
 1. Fork the repository
-2. Create a feature branch
-3. Make your changes with proper commit messages
-4. Build and test locally
-5. Submit a pull request
+2. Create a feature branch (`git checkout -b feature/amazing-feature`)
+3. Commit your changes (`git commit -m 'Add amazing feature'`)
+4. Push to the branch (`git push origin feature/amazing-feature`)
+5. Open a Pull Request
 
-## License
+### Guidelines
 
-ISC License
+- Follow the existing code style (enforced by Biome)
+- Add tests for new features
+- Update documentation as needed
+- Ensure all tests pass
+
+## 📄 License
+
+This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
+
+## 🙏 Acknowledgments
+
+- PhotoRoom for providing the powerful image editing API
+- The Node.js and TypeScript communities
+- Contributors and users of this project
+
+## ❓ FAQ
+
+### Q: Is this an official PhotoRoom tool?
+A: No, this is an independent project created by Luiz Tanure and is not affiliated with PhotoRoom.
+
+### Q: Do I need a PhotoRoom account?
+A: Yes, you need PhotoRoom API keys which require a PhotoRoom account.
+
+### Q: Can I use this commercially?
+A: This CLI tool is MIT licensed, but you must comply with PhotoRoom's API terms of service for commercial usage.
+
+### Q: How do I report bugs?
+A: Please open an issue on the [GitHub repository](https://github.com/letanure/photoroom-cli/issues).
+
+### Q: Can I request new features?
+A: Yes! Feature requests are welcome through GitHub issues.
+
+---
+
+**Author**: [Luiz Tanure](https://github.com/letanure)  
+**Repository**: [photoroom-cli](https://github.com/letanure/photoroom-cli)  
+**License**: MIT

@@ -1,142 +1,131 @@
 #!/usr/bin/env node
 
-import { Command } from 'commander';
-import { getApiKey } from './api-key-manager.js';
-import { handleAccount } from './apis/account/index.js';
-import { handleImageEditing } from './apis/image-editing/index.js';
-import { handleRemoveBackground } from './apis/remove-background/index.js';
-import { handleApiKeyManagement } from './commands/api-keys.js';
-import {
-  handleConfigGet,
-  handleConfigPath,
-  handleConfigReset,
-  handleConfigSet
-} from './commands/config.js';
-import { configManager } from './config.js';
-import { askForAction } from './questions.js';
+import yargs from 'yargs';
+import { hideBin } from 'yargs/helpers';
+import { accountDetails } from './account-details/index.js';
+import { imageEditing } from './image-editing/index.js';
+import { manageApiKeys } from './manage-api-keys/index.js';
+import { removeBackground } from './remove-background/index.js';
+import { getActiveApiKey } from './shared/config-manager.js';
+import { isDryRunEnabled, setDebugMode, setDryRunMode } from './shared/debug.js';
+import { askQuestions, type SelectQuestion } from './shared/question-handler.js';
 
-const program = new Command();
+type MainMenuOptions = readonly [
+  'removeBackground',
+  'imageEditing',
+  'accountDetails',
+  'manageApiKeys',
+  'exit'
+];
 
-program
-  .name('photoroom-cli')
-  .description('CLI tool for PhotoRoom API')
-  .version('1.0.0')
-  .option('--dry-run', 'Log API requests without executing them')
-  .option('--api-key <key>', 'PhotoRoom API key');
+function createMainMenuQuestions(hasActiveKey: boolean): SelectQuestion<MainMenuOptions>[] {
+  return [
+    {
+      type: 'select',
+      name: 'mainMenu',
+      label: 'Main Menu',
+      hint: 'Use arrow keys to navigate',
+      choices: [
+        {
+          message: 'Remove Background',
+          name: 'removeBackground',
+          value: 'removeBackground',
+          disabled: !hasActiveKey
+        },
+        {
+          message: 'Image Editing',
+          name: 'imageEditing',
+          value: 'imageEditing',
+          disabled: !hasActiveKey
+        },
+        {
+          message: 'Account details',
+          name: 'accountDetails',
+          value: 'accountDetails',
+          disabled: !hasActiveKey
+        },
+        { message: 'Manage API keys', name: 'manageApiKeys', value: 'manageApiKeys' },
+        { message: 'Exit', name: 'exit', value: 'exit' }
+      ],
+      default: hasActiveKey ? 'removeBackground' : 'manageApiKeys'
+    }
+  ];
+}
 
-program.action(async (options) => {
-  if (options.dryRun) {
-    console.log('\n⚠️  DRY RUN MODE ACTIVE - No API requests will be executed\n');
-  }
+async function main() {
+  try {
+    // Parse command line arguments
+    const argv = await yargs(hideBin(process.argv))
+      .option('debug', {
+        alias: 'd',
+        type: 'boolean',
+        description: 'Enable debug mode to log API requests and responses',
+        default: false
+      })
+      .option('dry-run', {
+        type: 'boolean',
+        description: 'Show what requests would be made without executing them',
+        default: false
+      })
+      .help()
+      .alias('help', 'h')
+      .version()
+      .alias('version', 'v')
+      .parse();
 
-  // Main loop for interactive mode
-  while (true) {
-    // Get API key first (skip if dry run)
-    const apiKey = options.dryRun ? 'dry-run-key' : await getApiKey(options);
+    // Enable debug mode if flag is set
+    if (argv.debug) {
+      setDebugMode(true);
+      console.log('🐛 Debug mode enabled');
+    }
 
-    // Show active API key if not dry run and API key is configured
-    if (!options.dryRun && apiKey !== 'dry-run-key') {
-      const activeKey = configManager.getActiveApiKeyDetails();
+    // Enable dry-run mode if flag is set
+    if (argv['dry-run']) {
+      setDryRunMode(true);
+    }
+
+    console.log('🎨 PhotoRoom CLI');
+
+    while (true) {
+      // Check for active API key on each iteration
+      const activeKey: Awaited<ReturnType<typeof getActiveApiKey>> = await getActiveApiKey();
       if (activeKey) {
-        const typeLabel = activeKey.type === 'live' ? 'Live' : 'Sandbox';
-        console.log(`\nUsing "${activeKey.name}" (${typeLabel})\n`);
+        console.log(`\n✅ Active API key: ${activeKey.data.name} (${activeKey.data.type})`);
       } else {
-        // Fallback to legacy environment display
-        const activeEnv = configManager.getActiveEnvironment();
-        if (activeEnv) {
-          const envLabel = activeEnv === 'live' ? 'Live' : 'Sandbox';
-          console.log(`\nUsing ${envLabel} environment\n`);
-        }
+        console.log('\n⚠️  No active API key found. Please configure one in "Manage API keys"');
+      }
+
+      // Show dry-run banner if enabled
+      if (isDryRunEnabled()) {
+        console.log('\n🔧 DRY-RUN MODE: No actual API requests will be made');
+      }
+      console.log('');
+
+      const questions = createMainMenuQuestions(!!activeKey);
+      const answers = await askQuestions(questions);
+
+      if (answers.mainMenu === 'exit') {
+        console.log('\n👋 Goodbye!');
+        process.exit(0);
+      }
+
+      // Based on answers, decide what to call
+      const actions = {
+        removeBackground: () => removeBackground(),
+        imageEditing: () => imageEditing(),
+        accountDetails: () => accountDetails(),
+        manageApiKeys: () => manageApiKeys()
+      };
+
+      const action = actions[answers.mainMenu as keyof typeof actions];
+      if (action) {
+        await action();
       }
     }
-
-    const action = await askForAction();
-
-    switch (action) {
-      case 'remove-bg':
-        await handleRemoveBackground({ dryRun: options.dryRun, apiKey });
-        break;
-      case 'account':
-        await handleAccount({ dryRun: options.dryRun, apiKey });
-        break;
-      case 'image-editing':
-        await handleImageEditing({ dryRun: options.dryRun, apiKey });
-        break;
-      case 'api-keys':
-        await handleApiKeyManagement();
-        continue; // Continue the loop to return to main menu
-      default:
-        console.log(`\n⚠️  ${action} is not implemented yet.`);
-    }
-
-    // Exit after handling other actions (non-management actions)
-    break;
+  } catch (error) {
+    console.error('❌ Error:', error);
+    process.exit(1);
   }
-});
+}
 
-program
-  .command('remove-bg')
-  .description('Remove background from an image')
-  .option('-i, --input <path>', 'Input image file path')
-  .option('-o, --output <path>', 'Output file path')
-  .option('-f, --format <format>', 'Output format (png, jpg, webp)', 'png')
-  .option('-c, --channels <channels>', 'Output channels (rgba, alpha)', 'rgba')
-  .option('-b, --bg-color <color>', 'Background color (hex or HTML color)')
-  .option('-s, --size <size>', 'Output size (preview, medium, hd, full)', 'full')
-  .option('--crop', 'Crop to cutout border')
-  .option('--despill', 'Remove colored reflections from green background')
-  .option('--dry-run', 'Log the API request without executing it')
-  .option('--api-key <key>', 'PhotoRoom API key')
-  .action(async (options) => {
-    await handleRemoveBackground(options);
-  });
-
-program
-  .command('account')
-  .description('View account details and usage statistics')
-  .option('--dry-run', 'Log the API request without executing it')
-  .option('--api-key <key>', 'PhotoRoom API key')
-  .action(async (options) => {
-    await handleAccount(options);
-  });
-
-program
-  .command('image-editing')
-  .description('Advanced image editing with AI (Plus plan)')
-  .option('--dry-run', 'Log the API request without executing it')
-  .option('--api-key <key>', 'PhotoRoom API key')
-  .action(async (options) => {
-    await handleImageEditing(options);
-  });
-
-const config = program.command('config').description('Manage configuration');
-
-config
-  .command('set <key> <value>')
-  .description('Set a configuration value')
-  .action(async (key, value) => {
-    await handleConfigSet(key, value);
-  });
-
-config
-  .command('get [key]')
-  .description('Get configuration value(s)')
-  .action(async (key) => {
-    await handleConfigGet(key);
-  });
-
-config
-  .command('reset')
-  .description('Reset all configuration')
-  .action(async () => {
-    await handleConfigReset();
-  });
-
-config
-  .command('path')
-  .description('Show configuration file path')
-  .action(() => {
-    handleConfigPath();
-  });
-
-program.parse();
+main();
