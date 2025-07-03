@@ -2,6 +2,68 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+## [1.8.0](https://github.com/letanure/photoroom-cli/compare/v1.1.0...v1.8.0) (2025-07-03)
+
+
+### Features
+
+* add account details retrieval ([323702c](https://github.com/letanure/photoroom-cli/commit/323702c62b0401cfee4f63795c03f3145f67fa24))
+* add background color input ([679d396](https://github.com/letanure/photoroom-cli/commit/679d396cad23f33f7cf43ee257eb41b41f33d1df))
+* add CI workflow f ([2d4cf5b](https://github.com/letanure/photoroom-cli/commit/2d4cf5b2e63043aa30b9f4578649e0769092698e))
+* add dry-run mode ([afe55bd](https://github.com/letanure/photoroom-cli/commit/afe55bd3f1d3550ab2edc2c54b67dbec7f2fccbf))
+* add file conflict handling ([df7687e](https://github.com/letanure/photoroom-cli/commit/df7687e3d9ab63c95dc8d8ad85482e944ec21734))
+* add key warining ([b2e86f6](https://github.com/letanure/photoroom-cli/commit/b2e86f69f02ea0b02f0cc8471980f8b84822b0a2))
+* add margin and padding sub groups ([3573ee1](https://github.com/letanure/photoroom-cli/commit/3573ee199fa857db532d8d2c805058d377895c78))
+* add number and toggle question types ([28e7ae7](https://github.com/letanure/photoroom-cli/commit/28e7ae7b6249994d5d2616858be6b5f416c89ffb))
+* add output directory ([5d61bed](https://github.com/letanure/photoroom-cli/commit/5d61bedc5d1df56d5471add7785de72aacea4e0e))
+* add questionimg edit ([e43c100](https://github.com/letanure/photoroom-cli/commit/e43c100b5b4b794eae4cb4d7f81324fdf042da7c))
+* add remove background questionsx ([bb557c8](https://github.com/letanure/photoroom-cli/commit/bb557c897ff0ee673cb0c21a10edf43bb00c780f))
+* add validation and error handling ([40448bf](https://github.com/letanure/photoroom-cli/commit/40448bf3ab36725b2888ffa9a352873e84073cae))
+* add vvitest for testing ([61fcb34](https://github.com/letanure/photoroom-cli/commit/61fcb34e04a542c73935e51af7ea4ecb646245b4))
+* clean implementation, separate questions object ([6456c18](https://github.com/letanure/photoroom-cli/commit/6456c185f870300eba0b627c470f5a11102701af))
+* group and reorder qustions ([181c47b](https://github.com/letanure/photoroom-cli/commit/181c47ba5fc507b120cee6d44520dab9f37316b6))
+* implement  account details ([1536b68](https://github.com/letanure/photoroom-cli/commit/1536b68014dbfb0b0bfd95b1b7cf0cf81dbe01d0))
+* implement API key management ([1e8b62d](https://github.com/letanure/photoroom-cli/commit/1e8b62d437381cf0b0d2c902cfe4fa554f1c6b6f))
+* implement call do edit api GET and POST ([e9d13ea](https://github.com/letanure/photoroom-cli/commit/e9d13eaa28d5d7ef07f1afc36e8e3f358f343765))
+* implement image editing ([ac39e82](https://github.com/letanure/photoroom-cli/commit/ac39e8289a9cb16bf4faf5fed412f8257f866d45))
+* implement remove background functionality ([1527845](https://github.com/letanure/photoroom-cli/commit/152784570382cb4927f06573a7d0d1426d258807))
+* integrate custom question handler with image editing ([dabe282](https://github.com/letanure/photoroom-cli/commit/dabe282cd6594d3613a2c50573b0b1a922d6d941))
+* refactor image selection ([1a4f5f5](https://github.com/letanure/photoroom-cli/commit/1a4f5f5feb68d9b6ad9214f9755a22c42ac5fc87))
+* reorganize questions ([1571f2d](https://github.com/letanure/photoroom-cli/commit/1571f2d6fd0d7a681118ab307b19839abf31ad8e))
+* restart with simpler question format and subquestions ([79844ba](https://github.com/letanure/photoroom-cli/commit/79844ba9b314dc12cd1ff8b7214b1f61e44ce78d))
+* start image editing questions ([eeb3fea](https://github.com/letanure/photoroom-cli/commit/eeb3feac05137a9c06a5ac632f573dbf2ea48b0b))
+* update error handling ([f2cf1fe](https://github.com/letanure/photoroom-cli/commit/f2cf1feff7746289146426372882c79dd48ac6de))
+
+
+### Bug Fixes
+
+* lint ([4230b71](https://github.com/letanure/photoroom-cli/commit/4230b7100a20dae042078ee5cba932e3fa1269fb))
+* lint ([911e06d](https://github.com/letanure/photoroom-cli/commit/911e06d625a6494e0df365c834d625ab908cec03))
+
+
+### Code Refactoring
+
+* update package.json scripts and dependencies ([e56217e](https://github.com/letanure/photoroom-cli/commit/e56217ef5305596582cccfb000d046914fb3cf4c))
+
+
+### Documentation
+
+* ad dreadme ([bbe6baf](https://github.com/letanure/photoroom-cli/commit/bbe6baf86ae54dd02bd04e8e76ac77190622d32b))
+
+
+### Chores
+
+* change order and group, add debug ([93de67e](https://github.com/letanure/photoroom-cli/commit/93de67ea0e74126a05063f98bbbaeb77092334d8))
+* **release:** 1.1.0 ([9369049](https://github.com/letanure/photoroom-cli/commit/936904916c2ac705f9de03d65bff762b392598dc))
+* **release:** 1.2.0 ([d32c1d0](https://github.com/letanure/photoroom-cli/commit/d32c1d08e4139e42e1f96b8e4ef0da3383987ff7))
+* **release:** 1.3.0 ([5c50d8e](https://github.com/letanure/photoroom-cli/commit/5c50d8e9f2c1d2a6b94ab59f997294277712f05e))
+* **release:** 1.4.0 ([119dc42](https://github.com/letanure/photoroom-cli/commit/119dc425df29dcd2c12c9c7ec02ee913a9867fe6))
+* **release:** 1.5.0 ([41b776b](https://github.com/letanure/photoroom-cli/commit/41b776b36bbdaee8882038adb0bfe63dd1a27b19))
+* **release:** 1.6.0 ([f6541a8](https://github.com/letanure/photoroom-cli/commit/f6541a8c495f5060c3dd2d9700c956503a8c9c66))
+* **release:** 1.7.0 ([6a4c82c](https://github.com/letanure/photoroom-cli/commit/6a4c82cca8d0ec51ddaa78534ae94550c4a2dd00))
+* remove old version code ([9e3ca9f](https://github.com/letanure/photoroom-cli/commit/9e3ca9f89dc29a09479a6d730942b5050321d1af))
+* update package.json ([8538c62](https://github.com/letanure/photoroom-cli/commit/8538c62735177cf7095d3bcb79b01802bcef5b43))
+
 ## [1.7.0](https://github.com/letanure/photoroom-cli/compare/v1.1.0...v1.7.0) (2025-07-03)
 
 
