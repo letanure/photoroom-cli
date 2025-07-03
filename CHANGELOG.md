@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+## [1.6.0](https://github.com/letanure/photoroom-cli/compare/v1.5.2...v1.6.0) (2025-07-03)
+
+
+### Features
+
+* add npm  publish to release workflow ([42794f8](https://github.com/letanure/photoroom-cli/commit/42794f85af8a608e8d514c5e81f058d89e3f02bc))
+
 ### [1.5.2](https://github.com/letanure/photoroom-cli/compare/v1.5.1...v1.5.2) (2025-07-03)
 
 
